@@ -1,0 +1,9 @@
+#!/bin/sh
+VM="$(ls $HOME/Qemu/VMs/*.vm | ( dmenu -l 5 || fzf) )"
+efi_enab="$(echo "$VM" | grep ".uefi.")"
+if [ $efi_enab ]
+then
+qemu-system-x86_64  $VM -vga virtio -display gtk,gl=on -m 4G -enable-kvm -smp 4 -cpu host -device AC97 -bios /usr/share/ovmf/OVMF.fd
+else
+qemu-system-x86_64  $VM -vga virtio -display gtk,gl=on -m 4G -enable-kvm -smp 4 -cpu host -device AC97
+fi

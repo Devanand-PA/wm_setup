@@ -1,0 +1,27 @@
+#!/bin/sh
+if [ ! $FILENAME ]
+then
+FILENAME="$(find $HOME ! -type d | fzf --preview="timg {} -g100x100 || batcat {} --color=always")"
+#FILENAME="$(fzf --preview="timg {} -g100x100 || batcat {} --color=always")"
+fi
+if [ "$FILENAME" ]
+then
+FILEEXTENTION="$(echo "$FILENAME" | awk -F '.' '{print $NF}')"
+DOCUMENT_VIEWER="zathura"
+MEDIA_PLAYER="mpv"
+IMAGE_VIEWER="sxiv"
+TEXT_EDITOR="vi"
+GOOD_APP=""
+case $FILEEXTENTION in
+	pdf | djvu | ps | epub )
+		GOOD_APP="$DOCUMENT_VIEWER";;
+	png | jpg | webp )
+		GOOD_APP="$IMAGE_VIEWER" ;;
+	mp4 | webm | mp3 | opus | mkv | wav )
+		GOOD_APP="$MEDIA_PLAYER" ;;
+	*)
+		GOOD_APP="$TEXT_EDITOR" ;;
+esac
+
+[ $FILEEXTENTION ] && "$GOOD_APP" "$FILENAME"
+fi
