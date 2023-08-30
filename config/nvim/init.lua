@@ -7,15 +7,37 @@ vim.cmd([[
 	colorscheme gruvbox
 	set clipboard=unnamedplus
 	set undofile
-	set undodir=/home/devanandpa/.config/nvim/undo/
-	silent! so run.vim
+	set undodir=$HOME/.config/nvim/undo/
 	]])
 local keymap = vim.api.nvim_set_keymap
 local opts = { noremap = true, silent = true }
+
 keymap("n", "q", ":qa!<CR>", opts)
 keymap("n", "w", ":w<CR>", opts)
 keymap("n", "<Down>", "<Down>zz",opts)
 keymap("n", "<Up>", "<Up>zz",opts)
 keymap("n", "j", "jzz",opts)
 keymap("n", "G", "Gzz",opts)
---keymap("i","<C-e>","<C-o>:r !emoji.sh -p<CR>",opts)
+function RunFileType()
+	local filetype = vim.bo.filetype
+	if filetype == "lua"
+	then
+		print("lua")
+	elseif filetype == "python"
+	then
+		vim.cmd([[
+		write
+		silent! !st -e python3 % 
+		]])
+	elseif filetype == "tex"
+	then
+		vim.cmd([[
+		write
+		silent! !pdflatex % 
+		silent! !biber % 
+		silent! !pdflatex %
+		]])
+	end
+end
+
+vim.api.nvim_set_keymap('n','<C-s>', ':lua RunFileType()<CR>',opts)
