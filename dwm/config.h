@@ -68,6 +68,7 @@ static const char *searchcmd[]  = { "st","-e","sc", NULL };
 static const char *searchemoji[]  = { "emoji.sh", NULL };
 static const char *brightnesscmd[][4] = {{"brightnessctl","set","5%-", NULL},{"brightnessctl","set","5+%", NULL}};
 static const char *volumekeys[][8] = {{"amixer","-D","pulse","set","Master","1+","toggle",NULL},{"amixer","-q","sset","'Master'","5%+",NULL},{"amixer","-q","sset","'Master'","5%-",NULL}};
+static const char *screenshot[][3] = {{"screenshot",NULL},{"screenshot","-s",NULL}};
 static const Key keys[] = {
 	/* modifier                     key        function        argument */
 	{ MODKEY,                       XK_space,      spawn,          {.v = dmenucmd } },
@@ -80,6 +81,8 @@ static const Key keys[] = {
 	{ 0,		                XF86XK_AudioMute, spawn,          {.v = volumekeys[0] } },
 	{ 0,		                XF86XK_AudioRaiseVolume, spawn,          {.v = volumekeys[1] } },
 	{ 0,		                XF86XK_AudioLowerVolume, spawn,          {.v = volumekeys[2] } },
+	{ 0,				XK_Print,		spawn,		{.v = screenshot[0] } },
+	{ MODKEY,			XK_Print,		spawn,		{.v = screenshot[1] } },
 	{ MODKEY|ShiftMask,                       XK_b,      togglebar,      {0} },
 	{ MODKEY,                       XK_j,      focusstack,     {.i = +1 } },
 	{ MODKEY,                       XK_k,      focusstack,     {.i = -1 } },

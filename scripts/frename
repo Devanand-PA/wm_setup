@@ -1,0 +1,5 @@
+#!/bin/sh
+FILE="$(ls | fzf --preview="timg {} -g100x100 || batcat {} --color=always")"
+echo "Rename to:"
+read newname
+mv "$FILE" "$newname"
