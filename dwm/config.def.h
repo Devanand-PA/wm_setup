@@ -12,9 +12,9 @@ static const char *fonts[]          = { "Liberation Mono:size=13" };
 static const char dmenufont[]       = "Liberation Mono:size=13";
 static const char col_1[]        = "#000000";
 static const char col_2[]       = "#444444";
-static const char col_3[]       = "#7f5d5d";
+static const char col_3[]       = "#dd3333";
 static const char col_4[]       = "#000000";
-static const char col_5[]       = "#7d5d5d";
+static const char col_5[]       = "#991111";
 static const char *colors[][3]      = {
 	/*               fg         bg         border   */
 	[SchemeNorm] = { col_3, col_1, col_2 },
@@ -68,6 +68,7 @@ static const char *browser2cmd[]={"chromium", NULL};
 static const char *browser3cmd[]={"brave-browser", NULL};
 static const char *mailcmd[]={"thunderbird", NULL};
 static const char *termcmd[]  = { "st", NULL };
+static const char *window_switcher_rofi[]  = { "rofi","-show","window", NULL };
 static const char *searchcmd[]  = { "st","-e","sc", NULL };
 static const char *searchemoji[]  = { "emoji.sh", NULL };
 static const char *brightnesscmd[][4] = {{"brightnessctl","set","5%-", NULL},{"brightnessctl","set","5+%", NULL}};
@@ -80,6 +81,7 @@ static const Key keys[] = {
 	{ MODKEY,	                XK_s, spawn,          {.v = searchcmd } },
 	{ MODKEY,	                XK_e, spawn,          {.v = searchemoji } },
 	{ MODKEY,	                XK_m, spawn,          {.v = mailcmd } },
+	{ MODKEY,                       XK_Tab,    spawn,          {.v = window_switcher_rofi} },
 	{ MODKEY,	                XK_b, spawn,          {.v = browsercmd } },
 	{ MODKEY|ShiftMask,             XK_v, spawn,          {.v = browser3cmd } },
 	{ MODKEY,	                XK_v, spawn,          {.v = browser2cmd } },
@@ -98,7 +100,7 @@ static const Key keys[] = {
 	{ MODKEY,                       XK_h,      setmfact,       {.f = -0.05} },
 	{ MODKEY,                       XK_l,      setmfact,       {.f = +0.05} },
 	{ MODKEY|ShiftMask,             XK_Return, zoom,           {0} },
-	{ MODKEY,                       XK_Tab,    view,           {0} },
+	//{ MODKEY,                       XK_Tab,    view,           {0} },
 	{ MODKEY,	                XK_q,      killclient,     {0} },
 	{ MODKEY,                       XK_t,      setlayout,      {.v = &layouts[0]} },
 	{ MODKEY|ShiftMask,             XK_f,      setlayout,      {.v = &layouts[1]} },
