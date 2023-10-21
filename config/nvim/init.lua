@@ -4,7 +4,8 @@ vim.cmd([[
 	set number
 	set relativenumber
 	set hidden
-	colorscheme nord
+	set background=dark
+	colorscheme PaperColor
 	set clipboard=unnamedplus
 	set undofile
 	set undodir=$HOME/.config/nvim/undo/
