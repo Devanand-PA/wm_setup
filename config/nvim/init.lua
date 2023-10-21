@@ -4,7 +4,7 @@ vim.cmd([[
 	set number
 	set relativenumber
 	set hidden
-	colorscheme gruvbox
+	colorscheme nord
 	set clipboard=unnamedplus
 	set undofile
 	set undodir=$HOME/.config/nvim/undo/
@@ -39,5 +39,12 @@ function RunFileType()
 		]])
 	end
 end
+-- Enable word wrapping and set wrap character
+vim.opt.wrap = true
+vim.opt.linebreak = true
+
+-- Customize wrap character (e.g., ↪)
+vim.opt.showbreak = '↪ '
+
 
 vim.api.nvim_set_keymap('n','<C-s>', ':lua RunFileType()<CR>',opts)
