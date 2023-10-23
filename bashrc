@@ -28,8 +28,6 @@ PS1='[\[\033[01;32m\]\w\[\033[00m\]]:-> '
 
 ###########[ Functions ]#################
 todolist() {
-printf "\033[01;41m$(cat $HOME/.scripts/todo/todo.md)\033[00m\n"
-ncal -y
 printf "\033[01;32mStaring at a computer will not help you. Take up a book and study \033[00m\n"
 }
 
