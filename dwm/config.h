@@ -12,9 +12,9 @@ static const char *fonts[]          = { "Liberation Mono:size=13" };
 static const char dmenufont[]       = "Liberation Mono:size=13";
 static const char col_1[]        = "#000000";
 static const char col_2[]       = "#444444";
-static const char col_3[]       = "#dd3333";
+static const char col_3[]       = "#ff5555";
 static const char col_4[]       = "#000000";
-static const char col_5[]       = "#991111";
+static const char col_5[]       = "#bb2222";
 static const char *colors[][3]      = {
 	/*               fg         bg         border   */
 	[SchemeNorm] = { col_3, col_1, col_2 },
@@ -30,7 +30,9 @@ static const Rule rules[] = {
 	 *	WM_NAME(STRING) = title
 	 */
 	/* class      instance    title       tags mask     isfloating  isterminal	noswallow monitor */
-	{ "Gimp",     NULL,       NULL,       0,            1,          0, 		0,		-1 },
+	//{ "Gimp",     NULL,       NULL,       0,            1,          0, 		0,		-1 },
+	{ "zice",     NULL,       NULL,       0,            1,          0, 		1,		-1 },
+	{ "zutty",     NULL,       NULL,       0,            1,          0, 		1,		-1 },
 	{ "st",     NULL,       NULL,       0,            0,          1, 		0,		-1 },
 //	{ "Firefox",  NULL,       NULL,       1 << 8,       0,          0, 		0,		-1 },
 	{ "thunderbird",  NULL,   NULL,       1 << 8,       0,          0, 		0,		-1 },
@@ -66,7 +68,9 @@ static const char *dmenucmd[] = { "dmenu_run", "-m", dmenumon, "-fn", dmenufont,
 static const char *browsercmd[]={"firefox", NULL};
 static const char *browser2cmd[]={"dolphin", NULL};
 static const char *browser3cmd[]={"brave-browser", NULL};
-static const char *mailcmd[]={"thunderbird", NULL};
+static const char *mailcmd[]={"mail", NULL};
+static const char *chatcmd[]={"chat", NULL};
+static const char *notescmd[]={"notion", NULL};
 static const char *termcmd[]  = { "st", NULL };
 static const char *window_switcher_rofi[]  = { "rofi","-show","window", NULL };
 static const char *searchcmd[]  = { "st","-e","sc", NULL };
@@ -77,14 +81,15 @@ static const char *screenshot[][3] = {{"screenshot",NULL},{"screenshot","-s",NUL
 static const Key keys[] = {
 	/* modifier                     key        function        argument */
 	{ MODKEY,                       XK_space,      spawn,          {.v = dmenucmd } },
-	{ MODKEY,	                XK_Return, spawn,          {.v = termcmd } },
+	{ MODKEY,	                XK_x, spawn,          {.v = termcmd } },
 	{ MODKEY,	                XK_s, spawn,          {.v = searchcmd } },
 	{ MODKEY,	                XK_e, spawn,          {.v = searchemoji } },
 	{ MODKEY,	                XK_m, spawn,          {.v = mailcmd } },
+	{ MODKEY,	                XK_Return, spawn,          {.v = notescmd } },
 	{ Mod1Mask,                       XK_Tab,    spawn,          {.v = window_switcher_rofi} },
 	{ MODKEY,	                XK_b, spawn,          {.v = browsercmd } },
 	{ MODKEY|ShiftMask,             XK_v, spawn,          {.v = browser3cmd } },
-	{ MODKEY,	                XK_v, spawn,          {.v = browser2cmd } },
+	{ MODKEY,	                XK_c, spawn,          {.v = chatcmd } },
 	{ 0,		                XF86XK_MonBrightnessDown, spawn,          {.v = brightnesscmd[0] } },
 	{ 0,		                XF86XK_MonBrightnessUp, spawn,          {.v = brightnesscmd[1] } },
 	{ 0,		                XF86XK_AudioMute, spawn,          {.v = volumekeys[0] } },
