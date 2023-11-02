@@ -10,7 +10,7 @@ static const int showbar            = 1;        /* 0 means no bar */
 static const int topbar             = 1;        /* 0 means bottom bar */
 #include "colors.h"
 /* tagging */
-static const char *tags[] = { "📖", "🌐", "🌿", "😜", "5", "6", "7", "🎮", "📧" };
+static const char *tags[] = { "📖", "", "", "😜", "5", "6", "7", "🎮", "📧" };
 
 static const Rule rules[] = {
 	/* xprop(1):
