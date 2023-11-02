@@ -8,7 +8,7 @@ static const unsigned int snap      = 1;       /* snap pixel */
 static const int swallowfloating    = 0;        /* 1 means swallow floating windows by default */
 static const int showbar            = 1;        /* 0 means no bar */
 static const int topbar             = 1;        /* 0 means bottom bar */
-#include "dwm.config.h"
+#include "colors.h"
 /* tagging */
 static const char *tags[] = { "📖", "🌐", "🌿", "😜", "5", "6", "7", "🎮", "📧" };
 
