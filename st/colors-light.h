@@ -1,29 +1,31 @@
 static const char *colorname[] = {
 	/* 8 normal colors */
-	"#666666",
-	"#990000",
-	"#009900",
-	"#999900",
-	"#009999",
-	"#990099",
-	"#777799",
-	"#111111",
+	"black",
+	"red3",
+	"#008800",
+	"yellow3",
+	"blue2",
+	"magenta3",
+	"#8888aa",
+	"#222222",
 
 	/* 8 bright colors */
-	"#557755",
-	"#550000",
-	"#005500",
-	"#555500",
-	"#005555",
-	"#550055",
-	"#111155",
-	"#111111",
+	"#222222",
+	"red",
+	"#006600",
+	"yellow",
+	"#5c5cff",
+	"magenta",
+	"#444455",
+	"#333333",
 
 	[255] = 0,
 
-	/* more colors can be added after 555 to use with DefaultXX */
-	"#cccccc",
-	"#555555",
+	/* more colors can be added after 255 to use with DefaultXX */
+	"#222222",
+	"#222222",
 	"#000000", /* default foreground colour */
-	"#666666", /* default background colour */
+	"#ffefef", /* default background colour */
 };
+/* bg opacity */
+float alpha = 0.8;

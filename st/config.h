@@ -5,7 +5,7 @@
  *
  * font: see http://freedesktop.org/software/fontconfig/fontconfig-user.html
  */
-static char *font = "Liberation Mono:pixelsize=16:antialias=true:autohint=true";
+static char *font = "Liberation Mono:pixelsize=18:antialias=true:autohint=true";
 static int borderpx = 15;
 
 /*
@@ -95,7 +95,7 @@ unsigned int tabspaces = 8;
 
 
 /* Terminal colors (16 first used in escape sequence) */
-#include "colors.h"
+#include "colors-dark.h"
 
 /*
  * Default colors (colorname index)

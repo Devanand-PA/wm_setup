@@ -7,7 +7,7 @@ static const char *colorname[] = {
 	"blue2",
 	"magenta3",
 	"cyan3",
-	"gray90",
+	"#444444",
 
 	/* 8 bright colors */
 	"gray50",
@@ -22,10 +22,10 @@ static const char *colorname[] = {
 	[255] = 0,
 
 	/* more colors can be added after 255 to use with DefaultXX */
-	"#cccccc",
+	"#444444",
 	"#555555",
-	"gray90", /* default foreground colour */
-	"#000000", /* default background colour */
+	"#000000", /* default foreground colour */
+	"#bbaaaa", /* default background colour */
 };
 /* bg opacity */
 float alpha = 0.8;
