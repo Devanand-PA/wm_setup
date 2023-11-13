@@ -241,6 +241,7 @@
 		if (sysctlbyname(BATTERY_TIME, &rem, &len, NULL, 0) < 0 || !len
 		    || rem < 0)
 			return NULL;
+		};
 
 		return bprintf("%uh %02um", rem / 60, rem % 60);
 	}

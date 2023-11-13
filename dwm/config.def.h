@@ -20,7 +20,8 @@ static const Rule rules[] = {
 	/* class      instance    title       tags mask     isfloating  isterminal	noswallow monitor */
 	//{ "Gimp",     NULL,       NULL,       0,            1,          0, 		0,		-1 },
 	{ "zice",     NULL,       NULL,       0,            1,          0, 		1,		-1 },
-	{ "zutty",     NULL,       NULL,       0,            1,          0, 		1,		-1 },
+	{ "Zutty",     NULL,       NULL,       0,            1,          0, 		1,		-1 },
+	{ "Blender",     NULL,       NULL,       0,            0,          0, 		1,		-1 },
 	{ "st",     NULL,       NULL,       0,            0,          1, 		0,		-1 },
 //	{ "Firefox",  NULL,       NULL,       1 << 8,       0,          0, 		0,		-1 },
 	{ "thunderbird",  NULL,   NULL,       1 << 8,       0,          0, 		0,		-1 },
@@ -54,6 +55,7 @@ static const Layout layouts[] = {
 static char dmenumon[2] = "0"; /* component of dmenucmd, manipulated in spawn() */
 static const char *dmenucmd[] = { "dmenu_run", "-m", dmenumon, "-fn", dmenufont, "-nb", col_1, "-nf", col_3, "-sb", col_5, "-sf", col_4, NULL };
 static const char *browsercmd[]={"firefox", NULL};
+static const char *killall_mons_cmd[]={"zutty","-e","killmons", NULL};
 static const char *browser2cmd[]={"dolphin", NULL};
 static const char *browser3cmd[]={"brave-browser", NULL};
 static const char *mailcmd[]={"mail", NULL};
@@ -61,7 +63,7 @@ static const char *chatcmd[]={"chat", NULL};
 static const char *notescmd[]={"notion", NULL};
 static const char *termcmd[]  = { "st", NULL };
 static const char *window_switcher_rofi[]  = { "rofi","-show","window", NULL };
-static const char *searchcmd[]  = { "st","-e","sc", NULL };
+static const char *searchcmd[]  = { "sc", NULL };
 static const char *searchemoji[]  = { "emoji.sh", NULL };
 static const char *brightnesscmd[][4] = {{"brightnessctl","set","5%-", NULL},{"brightnessctl","set","5+%", NULL}};
 static const char *volumekeys[][8] = {{"amixer","-D","pulse","set","Master","1+","toggle",NULL},{"amixer","-q","sset","'Master'","5%+",NULL},{"amixer","-q","sset","'Master'","5%-",NULL}};
@@ -88,6 +90,7 @@ static const Key keys[] = {
 	{ MODKEY|ShiftMask,                       XK_b,      togglebar,      {0} },
 	{ MODKEY,                       XK_j,      focusstack,     {.i = +1 } },
 	{ MODKEY,                       XK_k,      focusstack,     {.i = -1 } },
+	{ MODKEY|Mod1Mask,              XK_k,      spawn,     {.v = killall_mons_cmd } },
 	{ MODKEY,                       XK_i,      incnmaster,     {.i = +1 } },
 	{ MODKEY,                       XK_d,      incnmaster,     {.i = -1 } },
 	{ MODKEY,                       XK_h,      setmfact,       {.f = -0.05} },
