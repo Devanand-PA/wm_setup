@@ -23,6 +23,7 @@ static const Rule rules[] = {
 	{ "Zutty",     NULL,       NULL,       0,            1,          0, 		1,		-1 },
 	{ "Blender",     NULL,       NULL,       0,            0,          0, 		1,		-1 },
 	{ "st",     NULL,       NULL,       0,            0,          1, 		0,		-1 },
+	{ "Alacritty",     NULL,       NULL,       0,            0,          1, 		0,		-1 },
 //	{ "Firefox",  NULL,       NULL,       1 << 8,       0,          0, 		0,		-1 },
 	{ "thunderbird",  NULL,   NULL,       1 << 8,       0,          0, 		0,		-1 },
 };
@@ -61,9 +62,9 @@ static const char *browser3cmd[]={"brave-browser", NULL};
 static const char *mailcmd[]={"mail", NULL};
 static const char *chatcmd[]={"chat", NULL};
 static const char *notescmd[]={"notion", NULL};
-static const char *termcmd[]  = { "st", NULL };
+static const char *termcmd[]  = { "alacritty", NULL };
 static const char *window_switcher_rofi[]  = { "rofi","-show","window", NULL };
-static const char *searchcmd[]  = { "sc", NULL };
+static const char *searchcmd[]  = { "alacritty", "-e" , "sc", NULL };
 static const char *searchemoji[]  = { "emoji.sh", NULL };
 static const char *brightnesscmd[][4] = {{"brightnessctl","set","5%-", NULL},{"brightnessctl","set","5+%", NULL}};
 static const char *volumekeys[][8] = {{"amixer","-D","pulse","set","Master","1+","toggle",NULL},{"amixer","-q","sset","'Master'","5%+",NULL},{"amixer","-q","sset","'Master'","5%-",NULL}};

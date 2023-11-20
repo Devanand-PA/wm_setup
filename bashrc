@@ -1,13 +1,11 @@
 # ~/.bashrc: executed by bash(1) for non-login shells.
 # see /usr/share/doc/bash/examples/startup-files (in the package bash-doc)
 # for examples
-
 # If not running interactively, don't do anything
 case $- in
     *i*) ;;
       *) return;;
 esac
-
 # don't put duplicate lines or lines starting with space in the history.
 # See bash(1) for more options
 HISTCONTROL=ignoreboth
@@ -24,7 +22,7 @@ shopt -s checkwinsize
 # If set, the pattern "**" used in a pathname expansion context will
 # match all files and zero or more directories and subdirectories.
 shopt -s globstar
-PS1='[\[\033[01;32m\]\w\[\033[00m\]]:-> '
+PS1='[\[\033[01;32m\]\u:\[\033[01;34m\]\w\[\033[00m\]]:-> '
 
 ###########[ Functions ]#################
 todolist() {
@@ -37,20 +35,33 @@ j() {
 }
 
 searchpkg() {
-	unbuffer apt search "$@"  | less -r
+	unbuffer nala search "$@"  | less -r
 }
+
 #########################################
 
+
 ###########[ Aliases ]###############
+alias activate='source $HOME/venv/bin/activate' 
+alias ..='cd ..'
+alias bat='batcat'
+alias python='python3'
 alias ls='ls --color=auto'
+alias pd='find $HOME -type d | fzf '
+alias pf='find $HOME ! -type d | fzf '
+alias subplay='mpv --no-video  --player-operation-mode=pseudo-gui -fs'
+alias sudo='sudo '
+alias apt='nala'
 alias cal='ncal'
 alias ll='ls -lh'
 alias la='ls -lAh'
 alias ddg='links https://lite.duckduckgo.com/lite'
 alias listen='vi $HOME/.scripts/listen/listen.md'
-alias tt='ncal && date && cat $HOME/Documents/Courses/timetable.txt'
-alias todo='vi $HOME/.scripts/todo/todo.md&& clear && todolist'
+alias schedule='vi $HOME/.scripts/schedule/schedule.md'
 alias tl='vi $HOME/.scripts/todo/list.md'
+alias cando='vi $HOME/.scripts/cando/cando.md'
+alias :q='exit'
+alias :h='info bash'
 #####################################
 
 if ! shopt -oq posix; then
@@ -62,7 +73,7 @@ if ! shopt -oq posix; then
 fi
 
 #################[Scripts to be run after starting bashrc]################
-todolist
+#todolist
 
 set -o vi
 EDITOR=nvim

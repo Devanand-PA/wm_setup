@@ -1,8 +1,10 @@
 static const char *colorname[] = {
 	/* 8 normal colors */
+
+
 	"black",
 	"red3",
-	"green3",
+	"#5faf00",
 	"yellow3",
 	"blue2",
 	"magenta3",
@@ -12,7 +14,7 @@ static const char *colorname[] = {
 	/* 8 bright colors */
 	"gray50",
 	"red",
-	"green",
+	"#afd700",
 	"yellow",
 	"#5c5cff",
 	"magenta",
@@ -25,7 +27,7 @@ static const char *colorname[] = {
 	"#cccccc",
 	"#555555",
 	"gray90", /* default foreground colour */
-	"#000000", /* default background colour */
+	"#1c1c1c", /* default background colour */
 };
 /* bg opacity */
 float alpha = 0.8;
