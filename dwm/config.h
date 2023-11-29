@@ -22,7 +22,7 @@ static const Rule rules[] = {
 	{ "zice",     NULL,       NULL,       0,            1,          0, 		1,		-1 },
 	{ "Zutty",     NULL,       NULL,       0,            1,          0, 		1,		-1 },
 	{ "Blender",     NULL,       NULL,       0,            0,          0, 		1,		-1 },
-	{ "st",     NULL,       NULL,       0,            0,          1, 		0,		-1 },
+	//{ "st",     	NULL,       NULL,       0,            0,          1, 		0,		-1 },
 	{ "Alacritty",     NULL,       NULL,       0,            0,          1, 		0,		-1 },
 //	{ "Firefox",  NULL,       NULL,       1 << 8,       0,          0, 		0,		-1 },
 	{ "thunderbird",  NULL,   NULL,       1 << 8,       0,          0, 		0,		-1 },
@@ -61,6 +61,7 @@ static const char *browser2cmd[]={"dolphin", NULL};
 static const char *browser3cmd[]={"brave-browser", NULL};
 static const char *mailcmd[]={"mail", NULL};
 static const char *chatcmd[]={"chat", NULL};
+static const char *kill_xinit[]={"pkill","xinit", NULL};
 static const char *notescmd[]={"notion", NULL};
 static const char *termcmd[]  = { "alacritty", NULL };
 static const char *window_switcher_rofi[]  = { "rofi","-show","window", NULL };
@@ -121,7 +122,8 @@ static const Key keys[] = {
 	TAGKEYS(                        XK_7,                      6)
 	TAGKEYS(                        XK_8,                      7)
 	TAGKEYS(                        XK_9,                      8)
-	{ MODKEY|Mod1Mask,             XK_q,      quit,           {0} },
+	{ MODKEY|Mod1Mask,             XK_r,      quit,           {0} },
+	{ MODKEY|Mod1Mask,             XK_q,      spawn,           {.v = kill_xinit} },
 };
 
 /* button definitions */
