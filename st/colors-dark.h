@@ -27,7 +27,7 @@ static const char *colorname[] = {
 	"#cccccc",
 	"#555555",
 	"gray90", /* default foreground colour */
-	"#1c1c1c", /* default background colour */
+	"#000000", /* default background colour */
 };
 /* bg opacity */
 float alpha = 0.8;

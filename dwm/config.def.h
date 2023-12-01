@@ -22,7 +22,7 @@ static const Rule rules[] = {
 	{ "zice",     NULL,       NULL,       0,            1,          0, 		1,		-1 },
 	{ "Zutty",     NULL,       NULL,       0,            1,          0, 		1,		-1 },
 	{ "Blender",     NULL,       NULL,       0,            0,          0, 		1,		-1 },
-	//{ "st",     	NULL,       NULL,       0,            0,          1, 		0,		-1 },
+	{ "st",     	NULL,       NULL,       0,            0,          1, 		0,		-1 },
 	{ "Alacritty",     NULL,       NULL,       0,            0,          1, 		0,		-1 },
 //	{ "Firefox",  NULL,       NULL,       1 << 8,       0,          0, 		0,		-1 },
 	{ "thunderbird",  NULL,   NULL,       1 << 8,       0,          0, 		0,		-1 },
@@ -63,9 +63,12 @@ static const char *mailcmd[]={"mail", NULL};
 static const char *chatcmd[]={"chat", NULL};
 static const char *kill_xinit[]={"pkill","xinit", NULL};
 static const char *notescmd[]={"notion", NULL};
-static const char *termcmd[]  = { "alacritty", NULL };
-static const char *window_switcher_rofi[]  = { "rofi","-show","window", NULL };
-static const char *searchcmd[]  = { "alacritty", "-e" , "sc", NULL };
+//Terminal spawned
+static const char *termcmd[]  = { "st", NULL };
+static const char *searchcmd[]  = { "st", "-e" , "sc", NULL };
+static const char *spawnvimcmd[]  = { "st", "-e" , "nvim", NULL };
+//
+static const char *window_switcher_rofi[]  = { "rofi", "-show", "window", "-icon-theme", "Papirus" ,"-show-icons",  "-font", "JetBrains Mono  14" , NULL };
 static const char *searchemoji[]  = { "emoji.sh", NULL };
 static const char *brightnesscmd[][4] = {{"brightnessctl","set","5%-", NULL},{"brightnessctl","set","5+%", NULL}};
 static const char *volumekeys[][8] = {{"amixer","-D","pulse","set","Master","1+","toggle",NULL},{"amixer","-q","sset","'Master'","5%+",NULL},{"amixer","-q","sset","'Master'","5%-",NULL}};
@@ -77,6 +80,7 @@ static const Key keys[] = {
 	{ MODKEY,	                XK_s, spawn,          {.v = searchcmd } },
 	{ MODKEY,	                XK_e, spawn,          {.v = searchemoji } },
 	{ MODKEY,	                XK_m, spawn,          {.v = mailcmd } },
+	{ MODKEY,	                XK_n, spawn,          {.v = spawnvimcmd } },
 	{ MODKEY,	                XK_Return, spawn,          {.v = notescmd } },
 	{ Mod1Mask,                       XK_Tab,    spawn,          {.v = window_switcher_rofi} },
 	{ MODKEY,	                XK_b, spawn,          {.v = browsercmd } },
