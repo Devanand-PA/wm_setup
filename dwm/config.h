@@ -55,7 +55,9 @@ static const Layout layouts[] = {
 /* commands */
 static char dmenumon[2] = "0"; /* component of dmenucmd, manipulated in spawn() */
 static const char *dmenucmd[] = { "dmenu_run", "-m", dmenumon, "-fn", dmenufont, "-nb", col_1, "-nf", col_3, "-sb", col_5, "-sf", col_4, NULL };
-static const char *browsercmd[]={"firefox", NULL};
+static const char *browsercmd[]={"firefox","-P","default-esr", NULL};
+static const char *roficmd[]={"rofi","-show","drun","-drun-categories","Games","-theme","test", NULL};
+static const char *incognitocmd[]={"firefox","--private-window", NULL};
 static const char *killall_mons_cmd[]={"zutty","-e","killmons", NULL};
 static const char *browser2cmd[]={"dolphin", NULL};
 static const char *browser3cmd[]={"brave-browser", NULL};
@@ -70,18 +72,20 @@ static const char *spawnvimcmd[]  = { "st", "-e" , "nvim", NULL };
 //
 static const char *window_switcher_rofi[]  = { "rofi", "-show", "window", "-icon-theme", "Papirus" ,"-show-icons",  "-font", "JetBrains Mono  14" , NULL };
 static const char *searchemoji[]  = { "emoji.sh", NULL };
-static const char *brightnesscmd[][4] = {{"brightnessctl","set","5%-", NULL},{"brightnessctl","set","5+%", NULL}};
+static const char *brightnesscmd[][4] = {{"brightnessctl","set","1%-", NULL},{"brightnessctl","set","1+%", NULL}};
 static const char *volumekeys[][8] = {{"amixer","-D","pulse","set","Master","1+","toggle",NULL},{"amixer","-q","sset","'Master'","5%+",NULL},{"amixer","-q","sset","'Master'","5%-",NULL}};
 static const char *screenshot[][3] = {{"screenshot",NULL},{"screenshot","-s",NULL}};
 static const Key keys[] = {
 	/* modifier                     key        function        argument */
 	{ MODKEY,                       XK_space,      spawn,          {.v = dmenucmd } },
+	{ MODKEY|ShiftMask,                       XK_space,      spawn,          {.v = roficmd } },
 	{ MODKEY,	                XK_x, spawn,          {.v = termcmd } },
 	{ MODKEY,	                XK_s, spawn,          {.v = searchcmd } },
 	{ MODKEY,	                XK_e, spawn,          {.v = searchemoji } },
 	{ MODKEY,	                XK_m, spawn,          {.v = mailcmd } },
 	{ MODKEY,	                XK_n, spawn,          {.v = spawnvimcmd } },
 	{ MODKEY,	                XK_Return, spawn,          {.v = notescmd } },
+	{ MODKEY,	                XK_p, spawn,          {.v = incognitocmd } },
 	{ Mod1Mask,                       XK_Tab,    spawn,          {.v = window_switcher_rofi} },
 	{ MODKEY,	                XK_b, spawn,          {.v = browsercmd } },
 	{ MODKEY|ShiftMask,             XK_v, spawn,          {.v = browser3cmd } },
