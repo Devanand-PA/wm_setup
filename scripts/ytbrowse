@@ -59,6 +59,7 @@ else
 	while [ "$A" != "" ]
 	do
 	URLLINK="$(paste /tmp/searchtitle /tmp/channelname /tmp/searchurl | column -t | uniq |  $menu | awk '{print $NF}')"
+	[ "$URLLINK" ] || break
 	if [ $FORMAT ]
 	then
 	FORMAT="--ytdl-format=$FORMAT"
