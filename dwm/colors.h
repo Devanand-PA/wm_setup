@@ -1,4 +1,4 @@
-static const char *fonts[]          = { "Liberation Mono:size=12" };
+static const char *fonts[]          = { "Jetbrains Mono:size=12:style=Bold" };
 static const char dmenufont[]       = "Liberation Mono:size=12";
 static const char col_1[]        = "#000000";
 static const char col_2[]       = "#444444";

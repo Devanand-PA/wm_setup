@@ -55,13 +55,13 @@ static const Layout layouts[] = {
 /* commands */
 static char dmenumon[2] = "0"; /* component of dmenucmd, manipulated in spawn() */
 static const char *dmenucmd[] = { "dmenu_run", "-m", dmenumon, "-fn", dmenufont, "-nb", col_1, "-nf", col_3, "-sb", col_5, "-sf", col_4, NULL };
-static const char *browsercmd[]={"firefox","-P","default-esr", NULL};
+static const char *browsercmd[]={"firefox","-P","Personal", NULL};
 static const char *roficmd[]={"rofi","-show","drun","-drun-categories","Games","-theme","test", NULL};
 static const char *incognitocmd[]={"firefox","--private-window", NULL};
 static const char *killall_mons_cmd[]={"zutty","-e","killmons", NULL};
 static const char *browser2cmd[]={"dolphin", NULL};
 static const char *browser3cmd[]={"brave-browser", NULL};
-static const char *mailcmd[]={"mail", NULL};
+static const char *mailcmd[]={"firefox","-P","IISER", NULL};
 static const char *chatcmd[]={"chat", NULL};
 static const char *kill_xinit[]={"pkill","xinit", NULL};
 static const char *notescmd[]={"notion", NULL};
