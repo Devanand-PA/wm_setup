@@ -31,7 +31,7 @@ printf "\033[01;32mStaring at a computer will not help you. Take up a book and s
 
 
 j() {
-	cd "$(find $HOME -type d | fzf --preview="tree {}")"
+	cd "$(find $HOME -type d  | fzf --preview="tree {}")"
 }
 
 searchpkg() {
@@ -43,6 +43,7 @@ searchpkg() {
 
 ###########[ Aliases ]###############
 alias activate='source $HOME/venv/bin/activate' 
+alias tt="cat ~/Documents/timetable.txt"
 alias ..='cd ..'
 alias bat='batcat'
 alias python='python3'
@@ -56,12 +57,13 @@ alias cal='ncal'
 alias ll='ls -lh'
 alias la='ls -lAh'
 alias ddg='links https://lite.duckduckgo.com/lite'
-alias listen='vi $HOME/.scripts/listen/listen.md'
 alias schedule='vi $HOME/.scripts/schedule/schedule.md'
 alias tl='vi $HOME/.scripts/todo/list.md'
 alias cando='vi $HOME/.scripts/cando/cando.md'
 alias :q='exit'
+alias ytbrowse='ytbrowse -m="fzf -m"'
 alias :h='info bash'
+alias zathura='zathura --mode fullscreen'
 #####################################
 
 if ! shopt -oq posix; then
@@ -77,3 +79,9 @@ fi
 
 set -o vi
 EDITOR=nvim
+trap 'echo -ne "\033]0;${BASH_COMMAND}\007"' DEBUG
+(unbuffer  printf "\033[42;30mContents of Folder\033[0m\n==================\n" && ls -1 --color=always) | awk -v width=$(tput cols) '{
+    padding = (width) / 3;
+    printf "%" padding "s%s\n", "", $0;
+}'
+New Terminal

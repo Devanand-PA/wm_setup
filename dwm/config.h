@@ -22,7 +22,7 @@ static const Rule rules[] = {
 	{ "zice",     NULL,       NULL,       0,            1,          0, 		1,		-1 },
 	{ "Zutty",     NULL,       NULL,       0,            1,          0, 		1,		-1 },
 	{ "Blender",     NULL,       NULL,       0,            0,          0, 		1,		-1 },
-	{ "st",     	NULL,       NULL,       0,            0,          1, 		0,		-1 },
+	//{ "st",     	NULL,       NULL,       0,            0,          1, 		0,		-1 },
 	{ "Alacritty",     NULL,       NULL,       0,            0,          1, 		0,		-1 },
 //	{ "Firefox",  NULL,       NULL,       1 << 8,       0,          0, 		0,		-1 },
 	{ "thunderbird",  NULL,   NULL,       1 << 8,       0,          0, 		0,		-1 },
