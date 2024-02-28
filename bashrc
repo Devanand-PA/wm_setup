@@ -84,4 +84,4 @@ trap 'echo -ne "\033]0;${BASH_COMMAND}\007"' DEBUG
     padding = (width) / 3;
     printf "%" padding "s%s\n", "", $0;
 }'
-New Terminal
+printf "\033]0;New Terminal;"
