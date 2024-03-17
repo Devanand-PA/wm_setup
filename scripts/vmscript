@@ -1,9 +1,14 @@
 #!/bin/sh
 VM="$(ls $HOME/Qemu/VMs/*.vm | ( dmenu -l 5 || fzf) )"
 efi_enab="$(echo "$VM" | grep ".uefi.")"
+extra_storage="$HOME/Qemu/common_drives/vm_storage"
+if [ -f $extra_storage ]
+then
+	extra_storage="-hdb $extra_storage"
+fi
 if [ $efi_enab ]
 then
-qemu-system-x86_64  $VM -vga virtio -display gtk,gl=on -m 4G -enable-kvm -smp 4 -cpu host -device AC97 -nic user,hostfwd=tcp::60022-:22 -m -bios /usr/share/ovmf/OVMF.fd
+qemu-system-x86_64  $VM -vga virtio -display gtk,gl=on $extra_storage -m 4G -enable-kvm -smp 8 -cpu host -device AC97 -nic user,hostfwd=tcp::60022-:22 -m -bios /usr/share/ovmf/OVMF.fd
 else
-qemu-system-x86_64  $VM -vga virtio -display gtk,gl=on -m 4G -enable-kvm -smp 4 -cpu host  -device AC97  -nic user,hostfwd=tcp::60022-:22
+qemu-system-x86_64  $VM -vga virtio -display gtk,gl=on,full-screen=on $extra_storage -m 4G -enable-kvm -smp 8 -cpu host  -device AC97  -nic user,hostfwd=tcp::60022-:22
 fi
