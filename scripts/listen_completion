@@ -1,7 +1,0 @@
-#/usr/bin/env bash
-_dothis_completions()
-{
-  COMPREPLY=($(compgen -W "$(ls $HOME/.scripts/listen | awk -F '.md' '{print $1}')" "${COMP_WORDS[1]}"))
-}
-
-complete -F _dothis_completions listen

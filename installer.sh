@@ -15,6 +15,3 @@ sudo make clean install
 cd ..
 ###[Scripts]########
 mkdir -p $HOME/.local/bin
-cp scripts/listen $HOME/.local/bin/
-mdkir $HOME/.scripts/listen
-sudo cp scripts/listen_completion /usr/share/bash_completions/completions/listen
