@@ -1,0 +1,31 @@
+#!/bin/bash
+### SET FILE
+FILE="$@"
+if [ -z "$FILE" ]
+then
+	FILE="$(ls $HOME/.scripts/listen | awk -F '.md' '{print $1}' | fzf --height=1%)"
+	if [ -z "$FILE" ]
+	then
+		FILE="$(date +%s)"
+	fi
+fi
+###################################################################################
+
+FILE="$HOME/.scripts/listen/$FILE"
+printf "Enter Decryption Passphrase :"
+read -s PASSWORD
+if [ "$PASSWORD" ]
+then
+gpg --batch --output $FILE.md  --passphrase "$PASSWORD" --decrypt $FILE.md.gpg && rm $FILE.md.gpg && 	vi "$FILE.md"
+fi
+printf "Enter Encryption Passphrase :"
+read -s PASSWORD2
+if [ -z "PASSWORD2" ]
+then
+	PASSWORD2="$PASSWORD"
+fi
+if [ "PASSWORD2" ]
+then
+	gpg --batch --output $FILE.md.gpg  --passphrase "$PASSWORD" --symmetric $FILE.md && shred $FILE.md -u
+	echo "Done"
+fi
