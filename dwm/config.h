@@ -67,7 +67,7 @@ static const char *kill_xinit[]={"pkill","xinit", NULL};
 static const char *notescmd[]={"notion", NULL};
 //Terminal spawned
 static const char *termcmd[]  = { "st", NULL };
-static const char *searchcmd[]  = { "filsrc", NULL };
+static const char *searchcmd[]  = { "sc", NULL };
 static const char *spawnvimcmd[]  = { "st", "-e" , "nvim", NULL };
 //
 static const char *window_switcher_rofi[]  = { "rofi", "-show", "window", "-icon-theme", "Papirus" ,"-show-icons",  "-font", "JetBrains Mono  14" , NULL };
