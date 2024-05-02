@@ -3,10 +3,25 @@ import os
 with open(os.path.expanduser("~/.cd_history")) as FILE:
     cd_history = list(FILE.read().split('\n'))
 
+log = ""
+
+#======[LOGS]=======
+log += "cd_history is:\n"
+for i in cd_history :
+    log += str(i)+"\n"
+#===================
+
 cd_num = [ 0 for i in range(len(cd_history))]
 
 for i in cd_history:
     cd_num[cd_history.index(i)] += 1
+
+#====[LOGS]=========
+log += "cd_num is:\n"
+for i in cd_num :
+    log += str(i)+"\n"
+#===================
+
 
 sorted_array = [ list() for i in range(max(cd_num)+1)]
 
@@ -15,11 +30,20 @@ for i in range(len(cd_num)) :
         if not cd_history[i] in sorted_array[cd_num[i]] :
             sorted_array[cd_num[i]].append(cd_history[i])
 
+#======[LOGS]=======
+log += "sorted_array is:\n"
+for i in sorted_array :
+    log += str(i)+"\n"
+#===================
+
 output_array = []
 for i in sorted_array :
     if i :
         output_array.append(i)
-if [''] in output_array :
-    output_array.remove([''])
 for i in output_array :
-    print(i[0])
+    for j in range(len(i)) :
+        if i[j] != "" :
+            print(i[j])
+
+with open(os.path.expanduser('~/.scripts/logs/sort_cd_history.log'),'w') as FILE:
+    FILE.write(log)

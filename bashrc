@@ -53,13 +53,14 @@ PS1='[\[\033[0;32;3;1m\]\u\[\033[0m\]:\[\033[0;1;34m\]\w\[\033[00m\]]:-> '
 
 
 j_n() {
-	new_dir="$(realpath $(find $HOME -type d  | fzf --preview="tree {}"))"
-	["$new_dir" ] && echo "$new_dir" >> ~/.cd_history
+	new_dir="$(find $HOME -type d  | fzf --preview="tree {}")"
+	[ "$new_dir" ] && echo "$new_dir" >> ~/.cd_history
 	if [ "${new_dir}" ]
 	then
 	old_dir="$(pwd)"
 	fi
 	cd "${new_dir}"
+	new_dir="$(pwd)"
 }
 
 j() {
@@ -94,7 +95,7 @@ picktheme() {
 
 }
 
-cd() {
+c() {
 old_dir="$(pwd)" 
 [ "$(grep "$old_dir" ~/.cd_history)" ] || echo "$old_dir" >> ~/.cd_history
 
