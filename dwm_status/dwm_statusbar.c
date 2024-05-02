@@ -50,20 +50,20 @@ char bat_icon[50] = "[";
 int bat_10 = battery_percentage/10;
 //int bat_10 = ;
 for(int i=0;i<bat_10;++i){
-	printf("The Value of i is:%d\n",i);
-	printf("bat_10 is %d\n",bat_10);
+	//printf("The Value of i is:%d\n",i);
+	//printf("bat_10 is %d\n",bat_10);
 	sprintf(bat_icon,"%s%s",bat_icon,BAT_ARRAY[i]);
 }
-printf("Done with battery blocks\n");
-printf("Battery Blocks are %s\n",bat_icon);
+//printf("Done with battery blocks\n");
+//printf("Battery Blocks are %s\n",bat_icon);
 for(int i=0;i<(10-bat_10);++i)
 {
-	printf("The Value of i is:%d\n",i);
-	printf("bat_10 is %d\n",bat_10);
+	//printf("The Value of i is:%d\n",i);
+	//printf("bat_10 is %d\n",bat_10);
 	sprintf(bat_icon,"%s ", bat_icon);
 }
-printf("Done with battery blocks\n");
-printf("Battery Blocks are %s\n",bat_icon);
+//printf("Done with battery blocks\n");
+//printf("Battery Blocks are %s\n",bat_icon);
 sprintf(bat_icon,"%s]", bat_icon);
 if (strcmp(charging_status, "Discharging") == 0) {
 	sprintf(bat_icon,"%s⬇", bat_icon);

@@ -53,23 +53,24 @@ PS1='[\[\033[0;32;3;1m\]\u\[\033[0m\]:\[\033[0;1;34m\]\w\[\033[00m\]]:-> '
 
 
 j_n() {
-	new_dir="$(find $HOME -type d  | fzf --preview="tree {}")"
-	[ "$new_dir" ] && echo "$new_dir" >> ~/.cd_history
-	if [ "${new_dir}" ]
+	new_dir="$(find $HOME -type d  | fzf --preview='tree {}')"
+	[ "$new_dir" ]
+	if [ "${new_dir}" ] && [ "$new_dir" != "$(pwd)" ]
 	then
 	old_dir="$(pwd)"
-	fi
 	cd "${new_dir}"
 	new_dir="$(pwd)"
+	echo "$new_dir" >> ~/.cd_history
+	fi
 }
 
 j() {
-	new_dir="$(sort_cd_history | fzf --preview="tree {}" )"
-	[ "$new_dir" ] && echo "$new_dir" >> ~/.cd_history
-	if [ "${new_dir}" ]
+	new_dir="$(sort_cd_history | fzf --height=10% --tac)"
+	if [ "${new_dir}" ] && [ "$new_dir" != "$(pwd)" ]
 	then
 	old_dir="$(pwd)"
 	cd "${new_dir}"
+	echo "$new_dir" >> ~/.cd_history
 	fi
 }
 
