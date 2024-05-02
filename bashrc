@@ -69,8 +69,8 @@ j() {
 	if [ "${new_dir}" ]
 	then
 	old_dir="$(pwd)"
-	fi
 	cd "${new_dir}"
+	fi
 }
 
 k() {
@@ -95,7 +95,7 @@ picktheme() {
 
 }
 
-c() {
+cd() {
 old_dir="$(pwd)" 
 [ "$(grep "$old_dir" ~/.cd_history)" ] || echo "$old_dir" >> ~/.cd_history
 
@@ -116,11 +116,12 @@ alias rm='trash'
 alias r="pickup -r"
 alias less='less -RM'
 alias tt="cat ~/Documents/endsem_schedule.txt"
-alias ..='cd ..'
+alias ..='cd .. && echo "$(pwd)" >> ~/.cd_history'
 alias red="printf '\033[32;3m' ; read -e ; printf '\033[0m'"
 alias bat='batcat'
 alias python='python3'
 alias ls='ls --color=auto'
+#alias cd='old_dir="$(pwd)" && cd'
 alias pd='find $HOME -type d | fzf '
 alias pf='find $HOME ! -type d | fzf '
 alias subplay='mpv --no-video  --player-operation-mode=pseudo-gui -fs'

@@ -3,5 +3,4 @@ ARG="$1"
 [ "$ARG" = "U" ] && IMG="$(sel_img $(find $HOME/Pictures/Screenshots -type d))"
 [ "$ARG" = "N" ] && IMG="$(sel_img $(find $HOME/Pictures/Named_Screenshots -type d))"
 [ "$ARG" ] || IMG="$(sel_img $(find $HOME/Pictures/*Screenshots -type d))"
-[ "$IMG" ] && sxiv "$IMG"
-
+[ "$IMG" ] && sxiv -b -s f "$IMG"

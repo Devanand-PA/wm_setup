@@ -1,6 +1,7 @@
 #!/bin/sh
 
-MANAGER="$(echo "Bluetooth Settings
+MANAGER="$(echo "View Screenshots
+Bluetooth Settings
 Network Settings
 Set Background
 Set Theme
@@ -51,6 +52,8 @@ case $MANAGER in
 		 setbg ;;
 	"System Monitor")
 		btop --utf-force ;;
+	"View Screenshots" )
+		vscrot ;;
 	 "Set Theme")
 		 . $HOME/venv/bin/activate
 		 settheme "$(sel_img $(find $HOME/Pictures/Backgrounds -type d))"

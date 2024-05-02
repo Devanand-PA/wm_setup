@@ -18,7 +18,7 @@ if args.alpha :
 if args.light :
     print("Light Mode")
     title_fg = "#000000"
-    title_bg = wal_colors[0]
+    title_bg = wal_colors[1]
 else :
     print("Dark Mode")
     title_fg = wal_colors[15]
