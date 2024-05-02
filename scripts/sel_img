@@ -82,6 +82,9 @@ def on_select(event):
     label.configure(image=new_image)
     # Update the reference to the new image to avoid garbage collection
     label.image = new_image
+    index = listbox.curselection()
+    if index:
+        listbox.see(index)
 
 def on_enter(event):
     selected_item = listbox.get(listbox.curselection())
