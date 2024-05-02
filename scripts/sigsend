@@ -1,0 +1,7 @@
+#!/bin/sh
+Prog_Name="$1"
+Sig_num="$(($2+34))"
+if [ "$Prog_Name" ] && [ "$Sig_num" ]
+then
+kill -${Sig_num} $(pidof ${Prog_Name})
+fi

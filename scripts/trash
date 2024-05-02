@@ -1,0 +1,37 @@
+#!/bin/env python3
+import os
+import json
+import sys
+
+args = sys.argv[1:]
+while "-rf" in args :
+    args.remove("-rf")
+files = [ 0 for i in args ]
+
+data = [ 0 for i in args]
+for i in range(len(args)) :
+    files[i] = os.path.abspath(args[i])
+for i in range(len(data)) :
+    data[i] = { 
+                "OrigName" : files[i],
+                "TrashName" : ""
+            }
+
+for i in range(len(files)) :
+    j = files[i].replace('/', '%')
+    k = 0
+    test = j
+    while test  in os.listdir(os.path.expanduser("~/Trash/")) :
+        test = j+"_"+str(k)
+        k = k+1
+    data[i]["TrashName"] = test
+
+trash_data = os.path.expanduser("~/.trash_files/trash_data")
+
+with open(trash_data,"a") as FILE :
+    for i in data:
+        FILE.write(json.dumps(i))
+        FILE.write("\n")
+
+for i in range(len(files)): 
+    os.rename(files[i],os.path.expanduser("~/Trash/")+data[i]["TrashName"])

@@ -1,0 +1,54 @@
+#!/bin/env python3
+import os
+from contextlib import suppress
+import sys
+from iterfzf import iterfzf
+import json
+args = sys.argv[1:]
+def print_trash():
+    for i in os.listdir(os.path.expanduser('~/Trash/')):
+        yield i
+
+trash_data = os.path.expanduser("~/.trash_files/trash_data")
+with open(trash_data)  as FILE :
+    DATA = list(FILE.read().split('\n'))
+datas = []
+DATA2 = []
+
+if os.listdir(os.path.expanduser('~/Trash/')):
+    sel = iterfzf(print_trash(),multi=True)
+    unsel = []
+    for i in range(len(DATA)):
+        if DATA[i] != "" :
+            data = json.loads(DATA[i])
+            DATA2.append(data)
+        for j in range(len(sel)) :
+            if data["TrashName"] == sel[j] :
+                datas.append(data)
+                while data in DATA2 :
+                    DATA2.remove(data)
+
+    for i in range(len(datas)) :
+        j = datas[i]["OrigName"]
+        test = j
+        k = 0 
+        while os.path.exists(test) :
+            test = test+"_"+str(k)
+            k = k +1
+        datas[i]["OrigName"] = test
+        unsel.append(datas[i])
+   
+    with open(trash_data,"w")  as FILE :
+        FILE.write("")
+    
+    if DATA2 :
+        with open(trash_data,"a") as FILE :
+            for i in DATA2:
+                FILE.write(json.dumps(i))
+                FILE.write("\n")
+
+    for i in range(len(unsel)) :
+        with suppress(FileNotFoundError):
+            os.rename(os.path.expanduser("~/Trash/"+unsel[i]["TrashName"]),unsel[i]["OrigName"])
+else :
+    print("No Trash to remove")

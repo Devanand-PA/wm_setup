@@ -1,0 +1,58 @@
+#!/bin/sh
+
+MANAGER="$(echo "Bluetooth Settings
+Network Settings
+Set Background
+Set Theme
+System Monitor
+Record the Screen
+Edit Dwm Config" | fzf --layout=reverse)"
+
+bluetooth_settings() {
+BLT_MANAGER="$(echo "Connect to Bluetooth Devices
+Enable Bluetooth
+Disable Bluetooth" | fzf --layout=reverse)"
+	case $BLT_MANAGER in 
+		"Enable Bluetooth" )
+			sudo systemctl start bluetooth
+			sudo systemctl enable bluetooth ;;
+		"Disable Bluetooth" )
+			sudo systemctl stop bluetooth
+			sudo systemctl disable bluetooth ;;
+		"Connect to Bluetooth Devices" )
+			blueman-manager	;;
+	esac
+
+}
+
+
+case $MANAGER in 
+	"Bluetooth Settings" )
+		bluetooth_settings ;;
+	"Network Settings" )
+	nmtui	;;
+	"Edit Dwm Config" )
+	 cd $HOME/sourced/wm_setup/dwm/
+	 cp config.def.h /tmp/config.def.h
+	 vi /tmp/config.def.h
+	 if [ "$(diff $HOME/sourced/wm_setup/dwm/config.def.h /tmp/config.def.h)" ]
+	 then
+	 	cp  /tmp/config.def.h config.def.h
+	 	rm /tmp/config.def.h
+	 	sudo make clean install
+	 	kill -HUP $(pidof dwm)
+ 	 else
+		 rm /tmp/config.def.h
+	 fi
+	 ;;
+ 	"Record the Screen")
+		ffmpeg -f x11grab -i "$DISPLAY" -c:v libx264 -preset ultrafast "$HOME/Videos/Screen_Recordings/$(date +"%s-%a %d %b %I:%M %p").mkv" ;;
+	 "Set Background")
+		 setbg ;;
+	"System Monitor")
+		btop --utf-force ;;
+	 "Set Theme")
+		 . $HOME/venv/bin/activate
+		 settheme "$(sel_img $(find $HOME/Pictures/Backgrounds -type d))"
+esac
+

@@ -1,0 +1,25 @@
+#!/bin/python3
+import os
+with open(os.path.expanduser("~/.cd_history")) as FILE:
+    cd_history = list(FILE.read().split('\n'))
+
+cd_num = [ 0 for i in range(len(cd_history))]
+
+for i in cd_history:
+    cd_num[cd_history.index(i)] += 1
+
+sorted_array = [ list() for i in range(max(cd_num)+1)]
+
+for i in range(len(cd_num)) :
+    if cd_num[i] :
+        if not cd_history[i] in sorted_array[cd_num[i]] :
+            sorted_array[cd_num[i]].append(cd_history[i])
+
+output_array = []
+for i in sorted_array :
+    if i :
+        output_array.append(i)
+if [''] in output_array :
+    output_array.remove([''])
+for i in output_array :
+    print(i[0])

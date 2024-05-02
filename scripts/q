@@ -1,0 +1,22 @@
+#!/bin/env python
+import os
+
+a = sorted(os.listdir(os.path.expanduser("~/.scripts/quotes/")))
+for i in range(len(a)):
+    a[i] = int(a[i].replace('.txt','q').replace('q',''))
+b = sorted(a)
+
+def fill_missing(b) :
+    for i in range(1,max(b)+1) :
+        if not i in b :
+            elm_replace = i
+            return elm_replace
+    return False
+
+el_to_fill = fill_missing(b)
+if not el_to_fill :
+    el_to_fill = max(b) + 1
+
+filename = "q"+str(el_to_fill)+".txt"
+FILENAME = os.path.expanduser("~/.scripts/quotes/"+filename)
+os.system("vi "+FILENAME)

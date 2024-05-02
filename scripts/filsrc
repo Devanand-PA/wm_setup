@@ -1,0 +1,44 @@
+#!/bin/sh
+menu="$(for j in $@; do echo $j; done | grep '^-m=' | awk -F '=' '{print $2}')"
+FILENAME="$(for j in $@; do echo $j; done | grep -v '^-m=')"
+[ "$menu" ] || menu="dmenu -l 30"
+if [ ! $FILENAME ]
+then
+FILENAME="$(find $HOME ! -type d  | $menu -i)"
+#FILENAME="$(fzf --preview="timg {} -g100x100 || batcat {} --color=always")"
+#FILENAME="$(fzf --preview="fzf_previewable {}")"
+fi
+if [ "$FILENAME" ]
+then
+FILEEXTENTION="$(echo "$FILENAME" | awk -F '.' '{print $NF}')"
+DOCUMENT_VIEWER="zathura"
+MEDIA_PLAYER="mpv"
+IMAGE_VIEWER="sxiv"
+OFFICE_SUITE="libreoffice"
+if [ "$menu" = "dmenu -l 30" ]
+then
+TEXT_EDITOR="st -e vi"
+else
+TEXT_EDITOR="vi"
+fi
+GOOD_APP=""
+case $FILEEXTENTION in
+	xcf)
+		GOOD_APP="gimp" ;;
+	html)
+		GOOD_APP="surf" ;;
+	ods | odp )
+		GOOD_APP=$OFFICE_SUITE;;
+	pdf | djvu | ps | epub )
+		GOOD_APP=$DOCUMENT_VIEWER;;
+	png | jpg | webp )
+		GOOD_APP="$IMAGE_VIEWER" ;;
+	mp4 | m4a | m3u | webm | mp3 | opus | mkv | wav )
+		GOOD_APP="$MEDIA_PLAYER" ;;
+	*)
+		GOOD_APP="$TEXT_EDITOR" ;;
+esac
+OPTS=""
+#[ "$GOOD_APP" = "$DOCUMENT_VIEWER" ] && OPTS="--mode fullscreen"
+[ $FILEEXTENTION ] && $GOOD_APP "$FILENAME" $OPTS
+fi

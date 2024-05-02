@@ -1,0 +1,37 @@
+#!/bin/bash
+theme=""
+alpha=""
+backend=""
+col_mode=""
+declare args=("$@")
+for arg in "${args[@]}"	
+do
+	if [ -f "$arg" ]
+	then
+		theme="$arg"
+	else
+		case "$arg" in
+			-a=* )
+				alpha="${arg#*=}" ;;
+			-l )
+				col_mode="-l" && backend="--backend colorz" ;;
+		esac
+	fi
+	
+done
+[ "$alpha" ] && alpha="-a $alpha"
+if [ "$theme" ]
+then
+wal -s -n $backend $col_mode -i "$theme" 
+walscript $alpha $col_mode
+#sudo cp "$theme" /usr/share/wallpapers/wal
+cd $HOME/sourced/wm_setup/dmenu
+cp $HOME/.cache/wal/colors-wal-dmenu.h $HOME/sourced/wm_setup/dmenu/colors.h
+sudo make clean install
+cd $HOME/sourced/wm_setup/dwm
+sudo make clean install
+cd $HOME/sourced/wm_setup/st
+sudo make clean install
+cd $HOME
+kill -HUP $(pidof dwm)
+fi

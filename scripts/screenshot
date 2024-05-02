@@ -1,0 +1,32 @@
+#!/bin/python3
+import sys
+import os
+import subprocess
+import datetime
+def get_input(prompt):
+    # Call dmenu with the prompt
+    dmenu_promt = f": | dmenu -p '{prompt}'"
+    output = subprocess.check_output(dmenu_promt, shell=True, universal_newlines=True)
+    # Return the output without the newline character
+    return output.strip()
+DATE=datetime.datetime.now().strftime("%a %b %d %H:%M:%S %Z %Y")
+OPTIONS=""
+FILENAME=""
+if sys.argv[1:] :
+    OPTIONS = sys.argv[1]
+    FILENAME = get_input("Enter Screenshot Name :") 
+if FILENAME :
+    FILENAME=os.path.expanduser("~/Pictures/Named_Screenshots/"+FILENAME+".jpg")
+else :
+    FILENAME=os.path.expanduser("~/Pictures/Screenshots/"+DATE+".jpg")
+
+if FILENAME :
+    DIRNAME = os.path.dirname(FILENAME)
+    if not(os.path.isdir(DIRNAME)) :
+        subprocess.run(["mkdir","-p",DIRNAME])
+
+
+if OPTIONS :
+    subprocess.run(["scrot", "--select", FILENAME])
+else :
+    subprocess.run(["scrot",FILENAME])

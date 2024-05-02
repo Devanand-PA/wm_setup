@@ -1,0 +1,79 @@
+#!/bin/bash
+searchquery=""
+FORMAT=""
+dmode=""
+A="init"
+menu=""
+R=""
+# Handling dmode and FORMAT
+for i in "$@"
+do
+FORMAT+="$(echo "$i" | grep "^-F=" | awk -F "=" '{print $2}')"
+done
+
+for i in "$@"
+do
+	R+="$(echo "$i" | grep "^-R" )"
+done
+
+for i in "$@"
+do
+dmode+="$(echo "$i" | grep "^-d$")"
+done
+
+for i in "$@"
+do
+menu+="$(echo "$i" | grep "^-m=" | awk -F "=" '{print $2}')"
+done
+
+for i in "$@"
+do
+	[ "$(echo "$i" | grep -v "^-" )"  ] && searchquery="$searchquery $i"
+done
+####################################################
+
+[ -z "$searchquery" ] && searchquery="$(:|dmenu -p "Searchquery" )"
+[ "$TERM" == "dumb" ] || menu="fzf -m"
+[ -z "$menu" ] && menu="dmenu -l 30"
+
+if [ "$searchquery" ]
+then
+#############################
+echo "Loading..."
+curl -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.61 Safari/537.36" "https://yewtu.be/search?q=$(echo "$searchquery" | sed 's/\ /+/g')&type=video" > /tmp/searchquery 2>/dev/null
+curl -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.61 Safari/537.36" "https://yewtu.be/search?q=$(echo "$searchquery" | sed 's/\ /+/g')&type=video&page=2" >> /tmp/searchquery 2>/dev/null
+curl -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.61 Safari/537.36" "https://yewtu.be/search?q=$(echo "$searchquery" | sed 's/\ /+/g')&type=video&page=3" >> /tmp/searchquery 2>/dev/null
+grep "p dir=\"auto\"" /tmp/searchquery | grep -v "&nbsp" | awk -F ">" '{print $3}' | sed 's/<\/p//g' | sed 's/\ /_/g' > /tmp/searchtitle
+grep channel-name /tmp/searchquery |   awk -F ">" '{print $2}' | awk -F "&nbsp" '{print $1}' | sed 's/<\/p//g' | sed 's/\ /_/g' > /tmp/channelname
+grep youtube /tmp/searchquery | grep watch | awk -F "\"" '{print $4}'  > /tmp/searchurl
+if [ $dmode ]
+then
+	URLLINK="$(paste /tmp/searchtitle /tmp/channelname /tmp/searchurl | column -t | uniq |  $menu | awk '{print $NF}')"
+	if [ $FORMAT ]
+	then
+	FORMAT="--format=$FORMAT"
+   	yt-dlp "${FORMAT}" -o "$HOME/Videos/yt-dlp/%(uploader)s/%(playlist)s/%(playlist_index)s - %(title)s.%(ext)s" "$URLLINK" 
+	else
+   	yt-dlp  -o "$HOME/Videos/yt-dlp/%(uploader)s/%(playlist)s/%(playlist_index)s - %(title)s.%(ext)s" "$URLLINK" 
+	fi
+else
+	while [ "$A" != "" ]
+	do
+	URLLINK="$(paste /tmp/searchtitle /tmp/channelname /tmp/searchurl | column -t | uniq |  $menu | awk '{print $NF}')"
+	[ "$URLLINK" ] || break
+	if [ $FORMAT ]
+	then
+	FORMAT="--ytdl-format=$FORMAT"
+	mpv --really-quiet "$URLLINK" ${FORMAT} --player-operation-mode=pseudo-gui
+	else
+	mpv --really-quiet "$URLLINK" --player-operation-mode=pseudo-gui 
+	fi
+	A="$R"
+	done
+	
+fi
+############################
+
+else
+	echo "Sorry no searchquery entered"
+fi

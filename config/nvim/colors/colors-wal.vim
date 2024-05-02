@@ -1,0 +1,23 @@
+" Special
+let g:wallpaper  = "/home/devanandpa/Pictures/Backgrounds/Snow/wp8342598.jpg"
+let g:background = "#0A0B16"
+let g:foreground = "#a0a6c2"
+let g:cursor     = "#a0a6c2"
+
+" Colors
+let g:color0  = "#0A0B16"
+let g:color1  = "#463B5B"
+let g:color2  = "#384474"
+let g:color3  = "#4C476D"
+let g:color4  = "#655062"
+let g:color5  = "#986A4C"
+let g:color6  = "#3A4D88"
+let g:color7  = "#a0a6c2"
+let g:color8  = "#707487"
+let g:color9  = "#463B5B"
+let g:color10 = "#384474"
+let g:color11 = "#4C476D"
+let g:color12 = "#655062"
+let g:color13 = "#986A4C"
+let g:color14 = "#3A4D88"
+let g:color15 = "#a0a6c2"

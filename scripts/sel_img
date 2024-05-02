@@ -1,0 +1,150 @@
+#!/bin/python3
+import shutil
+import tkinter as tk
+import sys
+from tkinter import ttk
+import os
+from PIL import Image , ImageTk
+import json
+#====================================
+with open(os.path.expanduser('~/.config/Tkinter/style.json')) as FILE:
+    style = json.load(FILE)
+frame_style = style["frame_style"]
+listbox_style = style["listbox_style"]
+label_style = style["label_style"]
+#======================================
+
+im_height = 1000
+im_width = 1000
+
+#=========================================
+def set_focusup_to_listbox(event):
+    global listbox
+    listbox.focus_set()
+    curr_sel = listbox.curselection()[0]
+    listbox.selection_clear(0, tk.END)
+    if curr_sel == 0 :
+        listbox.select_set(tk.END)
+    else :
+        listbox.select_set(curr_sel-1)
+
+
+def set_focusdown_to_listbox(event):
+    global listbox
+    listbox.focus_set()
+    curr_sel = listbox.curselection()[0]
+    listbox.selection_clear(0, tk.END)
+    if curr_sel == int(listbox.size())-1 :
+        listbox.select_set(0)
+    else :
+        listbox.selection_clear(0, tk.END)
+        listbox.select_set(curr_sel+1)
+
+def set_focus_to_inputbar(event):
+    global inputbar
+    inputbar.focus_set()
+    on_select(1)
+
+def FILL_LISTBOX(LIST_ITEMS):
+    global listbox
+    listbox.delete(0, tk.END)
+    for item in LIST_ITEMS:
+        listbox.insert(tk.END,str(item))
+    listbox.select_set(0)
+
+def on_entry_change(event):
+    global DIRS
+    global inputbar
+    LIST_ITEMS = []
+    searchTERMS = list(searchquery.get().lower().split())
+    if searchTERMS :
+        for i in DIRS :
+            for j in searchTERMS :
+                if i not in LIST_ITEMS : 
+                    if  j in i.lower()  :
+                        LIST_ITEMS.append(i)
+    else:
+        for i in DIRS:
+            LIST_ITEMS.append(i)
+    FILL_LISTBOX(LIST_ITEMS)
+    on_select(1)
+
+def on_select(event):
+    global im_width
+    global im_height
+    selected_item = listbox.get(listbox.curselection())
+    selection_label.config(text=selected_item)
+    # Load a new image
+    selected_image = Image.open(selected_item)
+    selected_image.thumbnail((im_width,im_height))
+    new_image = ImageTk.PhotoImage(selected_image)
+    # Configure the label to display the new image
+    label.configure(image=new_image)
+    # Update the reference to the new image to avoid garbage collection
+    label.image = new_image
+
+def on_enter(event):
+    selected_item = listbox.get(listbox.curselection())
+    selected_image = selected_item
+    root.quit()
+    print(selected_image)
+
+def on_esc(event):
+    root.quit()
+    quit()
+#=========================================
+ARGS = sys.argv[1:]
+DIRS = []
+if not ARGS :
+    ARGS = [ os.getcwd() ]
+for i in ARGS:
+    if os.path.isdir(i):
+        for j in os.listdir(i):
+            filetype = list(j.split('.'))[-1]
+            if filetype == "png" or filetype == "jpg" :
+                DIRS.append(os.path.join(i,j))
+if not DIRS :
+    print("No Images found in directory")
+    quit()
+
+LIST_ITEMS = DIRS
+dirpath = os.path.expanduser('~/Pictures/Backgrounds/Anime/rezero')
+ARRAY = os.listdir(dirpath)
+root = tk.Tk()
+frame = tk.Frame(root, **frame_style)
+frame.pack(fill=tk.BOTH,expand=True)
+
+leftframe = tk.Frame(frame, **frame_style)
+leftframe.pack(side=tk.LEFT,fill=tk.BOTH,expand=True)
+searchquery = tk.StringVar()
+inputbar = tk.Entry(leftframe,textvariable=searchquery)
+inputbar.pack(side=tk.BOTTOM,anchor=tk.SW,fill=tk.X,expand=False)
+term_width = shutil.get_terminal_size().columns
+listbox = tk.Listbox(leftframe, **listbox_style)
+listbox.pack(side=tk.TOP,fill=tk.BOTH,expand=True)
+selection_label = tk.Label(frame,text=os.path.basename(LIST_ITEMS[0]), **label_style,wraplength=1000)
+selection_label.pack()
+image = Image.open(LIST_ITEMS[0])
+image.thumbnail((im_width,im_height))
+image = ImageTk.PhotoImage(image)
+
+
+label = tk.Label(frame,image=image)
+
+label.pack(side=tk.RIGHT)
+
+FILL_LISTBOX(LIST_ITEMS)
+
+listbox.bind("<<ListboxSelect>>", on_select)
+inputbar.focus_set()
+
+inputbar.bind("<KeyRelease>", on_entry_change)
+listbox.bind("<KeyRelease>", set_focus_to_inputbar)
+inputbar.bind("<Up>",set_focusup_to_listbox)
+inputbar.bind("<Down>",set_focusdown_to_listbox)
+inputbar.bind("<Return>",on_enter)
+listbox.bind("<Return>",on_enter)
+listbox.bind("<Escape>",on_esc)
+inputbar.bind("<Escape>",on_esc)
+
+root.mainloop()

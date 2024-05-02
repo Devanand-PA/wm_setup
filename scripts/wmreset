@@ -1,0 +1,7 @@
+#!/bin/python3
+import sys, os , subprocess , random
+arguments = sys.argv
+if arguments[1] == "bg":
+    wallpaper_path = os.path.expanduser("~/Pictures/images/astro_pic")
+    random_image = random.choice(os.listdir(wallpaper_path))
+    subprocess.run(['xwallpaper','--zoom',wallpaper_path+"/"+random_image])

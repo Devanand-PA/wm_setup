@@ -1,0 +1,13 @@
+#/bin/sh
+bg="$1"
+if [ "$bg" ]
+then
+feh --bg-fill "$bg" 
+else
+	bg_dirs="$(find $HOME/Pictures/Backgrounds -type d )"
+	bg=$(sel_img $bg_dirs)
+if [ "$bg" ]
+then
+feh --bg-fill "$bg" 
+fi
+fi

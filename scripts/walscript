@@ -1,0 +1,150 @@
+#!/bin/env python
+import os
+import json
+import argparse
+color_file = os.path.expanduser("~/.cache/wal/colors")
+with open(color_file) as FILE :
+    wal_colors = list(FILE.read().split('\n'))
+
+
+alpha_val="0.75"
+parser = argparse.ArgumentParser(description="walscript")
+parser.add_argument('-a','--alpha',metavar='alpha_val',type=str,help='Specify the alpha value')
+parser.add_argument('-l','--light',action='store_true',help='Apply a light theme')
+
+args = parser.parse_args()
+if args.alpha :
+    alpha_val = args.alpha
+if args.light :
+    print("Light Mode")
+    title_fg = "#000000"
+    title_bg = wal_colors[0]
+else :
+    print("Dark Mode")
+    title_fg = wal_colors[15]
+    title_bg = "#000000"
+
+# Vim
+wal_vim = os.path.expanduser('~/.cache/wal/colors-wal.vim')
+vim_color = os.path.expanduser('~/.config/nvim/colors/colors-wal.vim')
+with open(wal_vim) as FILE :
+    raw_vim = FILE.read()
+edited_vim = raw_vim.replace("let ","let g:")
+
+with open(vim_color,'w') as FILE:
+    FILE.write(edited_vim)
+
+# dwm
+wal_dwm = os.path.expanduser('~/.cache/wal/colors-wal-dwm.h') 
+dwm_color = os.path.expanduser('~/sourced/wm_setup/dwm/colors.h') 
+#dwm_color = os.path.expanduser('~/trashtesst/dwm/colors.h') 
+xresources = os.path.expanduser('~/.Xresources')
+with open(wal_dwm) as FILE:
+    raw_dwm = FILE.read()
+
+# List of lines
+raw_dwm_lines = list(raw_dwm.split('\n'))
+dwm_res = {
+        "dwm.normbordercolor" :"#000000" ,
+        "dwm.normbgcolor" :"" ,
+        "dwm.normfgcolor" :"" ,
+        "dwm.selbordercolor" :"" ,
+        "dwm.selbgcolor" :"" ,
+        "dwm.selgcolor" :"" 
+        }
+
+for i in range(11):
+    if "norm_fg" in raw_dwm_lines[i]:
+        dwm_res["dwm.normfgcolor"] = list(raw_dwm_lines[i].split('\"'))[1]
+
+    if "norm_bg" in raw_dwm_lines[i]:
+        dwm_res["dwm.normbgcolor"] = list(raw_dwm_lines[i].split('\"'))[1]
+
+    if "sel_fg" in raw_dwm_lines[i]:
+        dwm_res["dwm.selgcolor"] = list(raw_dwm_lines[i].split('\"'))[1]
+
+    if "sel_border" in raw_dwm_lines[i]:
+        dwm_res["dwm.selbordercolor"] = list(raw_dwm_lines[i].split('\"'))[1]
+
+    if "sel_bg" in raw_dwm_lines[i]:
+        dwm_res["dwm.selbgcolor"] = list(raw_dwm_lines[i].split('\"'))[1]
+
+edited_xres = f'''
+static char normbordercolor[] =  "#000000" ;
+static char normfgcolor[] = "{dwm_res["dwm.normfgcolor"]}";
+static char normbgcolor[] = "{dwm_res["dwm.normbgcolor"]}";
+static char selbordercolor[] = "{dwm_res["dwm.selbordercolor"]}";
+static char selbgcolor[] = "{dwm_res["dwm.selbgcolor"]}";
+static char selfgcolor[] = "{dwm_res["dwm.selgcolor"]}";
+static char dwm_titlebg[] = "{title_bg}";
+static char dwm_titlefg[] = "{title_fg}";
+'''
+with open(dwm_color,'w') as FILE:
+    FILE.write(edited_xres)
+
+
+# Zathura
+
+zathura_colors = os.path.expanduser('~/.config/zathura/colors')
+zathura_edited = f'''
+set recolor-darkcolor "{dwm_res["dwm.normfgcolor"]}"
+set recolor-lightcolor "{dwm_res["dwm.normbgcolor"]}"
+'''
+with open(zathura_colors,'w') as FILE:
+    FILE.write(zathura_edited)
+
+# Tkinter
+tkinter_colors = os.path.expanduser('~/.config/Tkinter/style.json')
+tkinter_style =  { "frame_style" : {
+    'background': dwm_res["dwm.normbgcolor"],
+} , 
+
+      "listbox_style" : {
+    'background': dwm_res["dwm.normbgcolor"],
+    'foreground' : dwm_res["dwm.normfgcolor"],
+    'font': ('JetBrains Mono', 12)
+} ,
+
+      "label_style" : {
+    'background': dwm_res["dwm.normbgcolor"],
+    'foreground' : dwm_res["dwm.normfgcolor"],
+    'font': ('JetBrains Mono', 12)
+} }
+
+with open(tkinter_colors,'w') as FILE :
+    json.dump(tkinter_style,FILE)
+
+# suckless st
+st_colorconfig = os.path.expanduser("~/sourced/wm_setup/st/colors.h")
+st_res = f'''
+static const char *colorname[] = {{
+"{wal_colors[0]}",      //  "black",
+"{wal_colors[1]}",      //  "red3",
+"{wal_colors[2]}",      //  "green3",
+"{wal_colors[3]}",      //  "yellow3",
+"{wal_colors[4]}",      //  "blue2",
+"{wal_colors[5]}",      //  "magenta3",
+"{wal_colors[6]}",      //  "cyan3",
+"{wal_colors[7]}",      //  "#444444",
+"{wal_colors[8]}",      //  "gray50",
+"{wal_colors[9]}",      //  "red",                        
+"{wal_colors[10]}",     //  "green",
+"{wal_colors[11]}",     //  "yellow",
+"{wal_colors[12]}",     //  "#5c5cff" "light blue"
+"{wal_colors[13]}",     //  "magenta"
+"{wal_colors[14]}",     //  "cyan",
+"{wal_colors[15]}",     //  "white",
+                            
+[255] = 0,
+
+/* more colors can be added after 255 to use with DefaultXX */
+"#444444",
+"#555555",
+"{wal_colors[15]}",
+"{wal_colors[0]}", /* default background color */
+}};
+/* bg opacity */
+float alpha = {alpha_val};
+'''
+with open(st_colorconfig,'w') as FILE:
+    FILE.write(st_res)

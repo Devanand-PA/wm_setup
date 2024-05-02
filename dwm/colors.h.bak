@@ -1,0 +1,7 @@
+
+static char normbordercolor[] =  "#000000" ;
+static char normbgcolor[] = "#18191c";
+static char normfgcolor[] = "#e2cdbf";
+static char selbordercolor[] = "#e2cdbf";
+static char selbgcolor[] = "#627985";
+static char selfgcolor[] = "#e2cdbf";

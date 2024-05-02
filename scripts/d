@@ -1,0 +1,52 @@
+#!/bin/env python
+import os
+import sys
+import subprocess
+
+words = sys.argv[1:]
+DIR = os.path.expanduser('~/.scripts/dictionary/')
+checked = os.listdir(DIR)
+
+meanings = []
+unfound = []
+def display_with_pager(text):
+    pager_command = subprocess.Popen(['less', '-R'], stdin=subprocess.PIPE)
+    pager_command.communicate(input=text.encode('utf-8'))
+
+for word in words :
+    if word in checked :
+        with open(DIR+word) as FILE:
+           meanings.append(FILE.read())
+    else :
+        word_proc = subprocess.run(['dict',word],stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+        word_output = word_proc.stdout.decode('utf-8')
+        if word_output :
+            meanings.append(word_output)
+            with open(DIR+word,'w') as FILE :
+                FILE.write(word_output)
+        else :
+            unfound.append(word)
+
+
+printout = ""
+for meaning in meanings :
+    if meaning :
+        printout += meaning
+        a = [ "=" for i in range(os.get_terminal_size().columns) ]
+        printout += "\n"
+        for i in a :
+            printout += i
+        printout += "\n\n"
+
+if printout :
+    b = ""
+    for i in a :
+        b += i
+    b += "\n"
+        
+    display_with_pager(b+printout)
+if unfound :
+    print("Could not find : ",end='')
+    for i in unfound :
+        print(" \033[0;4;31m"+i+"\033[0m",end='')
+print("\033[0m")
