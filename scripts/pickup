@@ -5,6 +5,52 @@ import os
 import json
 
 document_viewer = [ "zathura", "--mode", "fullscreen" ]
+read_toggle = True
+def user_action(Chosen):
+        global read_toggle
+        filePath = os.path.expanduser('~/.scripts/pickup/'+Chosen)
+        with open(filePath) as FILE:
+            data = json.load(FILE)
+        bookNames = data["bookNames"]
+        curr = data["curr"]
+        realPath = data["realPath"]
+        try : 
+            if read_toggle : 
+                subprocess.run(document_viewer+[realPath+"/"+curr],stderr=subprocess.DEVNULL)
+            print("\033[33;1mWhat do you want to do ?\033[0m")
+            print("\033[33;1mn \033[0;1m-> \033[0;32;3mNext\033[0m")
+            print("\033[33;1mp \033[0;1m-> \033[0;32;3mPrevious\033[0m")
+            print("\033[33;1mr \033[0;1m-> \033[0;32;3mRe-read\033[0m")
+            print("\033[33;1mq \033[0;1m-> \033[0;32;3mQuit\033[0m")
+            print("\033[33;1ml \033[0;1m-> \033[0;32;3mList Books\033[0m")
+            response = input("You Choose :")
+            if response == "n" :
+                pb = bookNames.index(curr)+1
+                if pb < len(bookNames) :
+                    curr = bookNames[pb]
+                    data["curr"] = curr
+                    with open(filePath,'w') as FILE:
+                        json.dump(data,FILE)
+                    read_toggle = True
+            elif response == "p" :
+                pb = bookNames.index(curr)-1
+                if pb > -1 :
+                    curr = bookNames[pb]
+                    data["curr"] = curr
+                    with open(filePath,'w') as FILE:
+                        json.dump(data,FILE)
+                    read_toggle = True
+            elif response == "l" :
+                listprint(Chosen)
+            elif response == "r" :
+                read_toggle = True
+            elif response == "q" :
+                quit()
+        except KeyboardInterrupt:
+            print("")
+            quit()
+
+
 def add_new(FILENAME) :
     realPath=subprocess.run(['realpath',FILENAME],capture_output=True, text=True).stdout.replace('\n','')
     Title = str(realPath.split('/')[-1])
@@ -39,32 +85,16 @@ def add_new(FILENAME) :
         else :
             quit()
 
-def listprint():
-    Playlists= sorted(os.listdir(os.path.expanduser('~/.scripts/pickup')))
-    if Playlists :
-        print("\033[0;34;1mThe available sections are :\033[0m")
-    else :
-        print("\033[0;34;1mNo available sections !:\033[0m")
-    j = 1
-    for i in Playlists :
-        print("\033[0;33m"+str(j)+". \033[0;32;3m"+str(i)+"\033[0m")
-        j += 1
+def listprint(Chosen):
+    global read_toggle
+    read_toggle = False
     try : 
-        Chosen = input("Select a Playlist (Choose number): ")
-        if Chosen == "q" :
-            quit()
-        else :
-            try :
-                Chosen = Playlists[int(Chosen)-1]
-            except:
-                print(f"\033[31;1mCheck if you entered a valid number\033[0m")
-                quit()
         filePath = os.path.expanduser('~/.scripts/pickup/'+Chosen)
         with open(filePath) as FILE:
             data = json.load(FILE)
         bookNames = data["bookNames"]
         curr = data["curr"]
-        realPath = data["realPath"]
+        #realPath = data["realPath"]
         if bookNames :
             print("\033[0;34;1mAvailable books in this section are:\033[0m")
         j = 1
@@ -74,9 +104,10 @@ def listprint():
                 print("\033[0;1;36m <- Currently here\033[0m",end='')
             print("")
             j += 1
-        print("")
+        while True :
+            user_action(Chosen)
     except KeyboardInterrupt:
-            print("")
+            print("Interrupted by Keyboard")
             quit()
 
 
@@ -102,44 +133,12 @@ def readbook() :
             except:
                 print(f"\033[31;1mCheck if you entered a valid number\033[0m")
                 quit()
-        filePath = os.path.expanduser('~/.scripts/pickup/'+Chosen)
-        with open(filePath) as FILE:
-            data = json.load(FILE)
-        bookNames = data["bookNames"]
-        curr = data["curr"]
-        realPath = data["realPath"]
     except KeyboardInterrupt:
             print("")
             quit()
 
     while True :
-        try : 
-            subprocess.run(document_viewer+[realPath+"/"+curr],stderr=subprocess.DEVNULL)
-            print("\033[33;1mWhat do you want to do ?\033[0m")
-            print("\033[33;1mn \033[0;1m-> \033[0;32;3mNext\033[0m")
-            print("\033[33;1mp \033[0;1m-> \033[0;32;3mPrevious\033[0m")
-            print("\033[33;1mr \033[0;1m-> \033[0;32;3mRe-read\033[0m")
-            print("\033[33;1mq \033[0;1m-> \033[0;32;3mQuit\033[0m")
-            response = input("You Choose :")
-            if response == "n" :
-                pb = bookNames.index(curr)+1
-                if pb < len(bookNames) :
-                    curr = bookNames[pb]
-                    data["curr"] = curr
-                    with open(filePath,'w') as FILE:
-                        json.dump(data,FILE)
-            elif response == "p" :
-                pb = bookNames.index(curr)-1
-                if pb > -1 :
-                    curr = bookNames[pb]
-                    data["curr"] = curr
-                    with open(filePath,'w') as FILE:
-                        json.dump(data,FILE)
-            elif response == "q" :
-                quit()
-        except KeyboardInterrupt:
-            print("")
-            quit()
+        user_action(Chosen)
                 
 
 
@@ -147,14 +146,34 @@ def readbook() :
 def main():
     parser = argparse.ArgumentParser(description="Pick up Where you left off",)
     parser.add_argument('-n','--add',metavar='FILENAME',type=str,help='Adds the given folder to library')
-    parser.add_argument('-p','--print',action='store_true',help='Prints the current list')
+    parser.add_argument('-l','--list',action='store_true',help='Prints the current list')
     parser.add_argument('-r','--read',action='store_true',help='Read the Books(s) from where you left off')
     args = parser.parse_args()
     if args.add :
         add_new(args.add)
-
-    if args.print :
-        listprint()
+    Chosen = ""
+    if args.list :
+            if not Chosen:
+                Playlists= sorted(os.listdir(os.path.expanduser('~/.scripts/pickup')))
+            if Playlists :
+                print("\033[0;34;1mThe available sections are :\033[0m")
+            else :
+                print("\033[0;34;1mNo available sections !:\033[0m")
+            j = 1
+            for i in Playlists :
+                print("\033[0;33m"+str(j)+". \033[0;32;3m"+str(i)+"\033[0m")
+                j += 1
+            Chosen = input("Select a Playlist (Choose number): ")
+            if Chosen == "q" :
+                    quit()
+            else :
+                    try :
+                        Chosen = Playlists[int(Chosen)-1]
+                    except:
+                        print(f"\033[31;1mCheck if you entered a valid number\033[0m")
+                        quit()
+            
+            listprint("Oregairu")
 
     if args.read :
         readbook()

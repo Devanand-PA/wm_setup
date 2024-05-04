@@ -4,7 +4,7 @@ FILENAME="$(for j in $@; do echo $j; done | grep -v '^-m=')"
 [ "$menu" ] || menu="dmenu -l 30"
 if [ ! $FILENAME ]
 then
-FILENAME="$(find $HOME ! -type d  | $menu -i)"
+FILENAME="$(find $HOME  -type f  | $menu -i)"
 #FILENAME="$(fzf --preview="timg {} -g100x100 || batcat {} --color=always")"
 #FILENAME="$(fzf --preview="fzf_previewable {}")"
 fi
