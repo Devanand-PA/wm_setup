@@ -10,7 +10,7 @@ cd ../dmenu/
 sudo make clean install
 cd ../st/
 sudo make clean install
-cd ../slstatus/
+cd ../dwm_status/
 sudo make clean install
 cd ..
 
@@ -19,8 +19,10 @@ python -m venv $HOME/venv
 
 ###[Scripts]########
 mkdir -p $HOME/.local/bin
+mkdir -p $HOME/.scripts/bin/
 mkdir -p $HOME/.config/Tkinter
-cp scripts/* $HOME/.local/bin/
+cp scripts/* $HOME/.scripts/bin/
+chmod +x $HOME/.scripts/bin/*
 mkdir ~/Trash
 mkdir ~/.trash_files/
 touch ~/.trash_files/trash_data

@@ -49,7 +49,13 @@ char bat_icon[50] = "[";
 
 int bat_10 = battery_percentage/10;
 //int bat_10 = ;
-for(int i=0;i<bat_10;++i){
+if (bat_10 == 10) {
+bat_10 = 9;
+}
+
+printf("bat_10 is :");
+printf("%d\n",bat_10);
+for(int i=0;i<bat_10+1;++i){
 	//printf("The Value of i is:%d\n",i);
 	//printf("bat_10 is %d\n",bat_10);
 	sprintf(bat_icon,"%s%s",bat_icon,BAT_ARRAY[i]);
