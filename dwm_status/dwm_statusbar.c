@@ -53,8 +53,8 @@ if (bat_10 == 10) {
 bat_10 = 9;
 }
 
-printf("bat_10 is :");
-printf("%d\n",bat_10);
+//printf("bat_10 is :");
+//printf("%d\n",bat_10);
 for(int i=0;i<bat_10+1;++i){
 	//printf("The Value of i is:%d\n",i);
 	//printf("bat_10 is %d\n",bat_10);
