@@ -42,7 +42,7 @@ static const Rule rules[] = {
 	{ "st-fzf",     NULL,       	NULL,	0,            	0,        	1, 		0,		-1 },
 	{ "st-applet",	NULL,       	NULL,	0,            	1,        	0, 		0,		-1 },
 	{ "st",     NULL,       	NULL,	0,            	0,        	1, 		0,		-1 },
-	{ "Alacritty",  NULL,		NULL, 	0,		0,		1,	 	0,		-1 },
+//	{ "Alacritty",  NULL,		NULL, 	0,		0,		1,	 	0,		-1 },
 //	{ "Firefox",  	NULL,       	NULL,	1 << 8,	       	0,          	0, 		0,		-1 },
 //	{ "thunderbird",NULL,   	NULL,	1 << 8,	       	0,          	0, 		0,		-1 },
 };

@@ -1,4 +1,5 @@
 #!/bin/python3
+import subprocess
 import shutil
 import tkinter as tk
 import sys
@@ -18,6 +19,8 @@ im_height = 1000
 im_width = 1000
 
 #=========================================
+
+
 def set_focusup_to_listbox(event):
     global listbox
     listbox.focus_set()
@@ -97,7 +100,13 @@ def on_esc(event):
     quit()
 #=========================================
 ARGS = sys.argv[1:]
+
 DIRS = []
+
+## Argparsing
+if "-r" in ARGS :
+    a = list(subprocess.getoutput(["find","-type","d"]).split('\n'))
+    ARGS = ARGS + a
 if not ARGS :
     ARGS = [ os.getcwd() ]
 for i in ARGS:
@@ -106,6 +115,7 @@ for i in ARGS:
             filetype = list(j.split('.'))[-1]
             if filetype == "png" or filetype == "jpg" :
                 DIRS.append(os.path.join(i,j))
+###
 if not DIRS :
     print("No Images found in directory")
     quit()
