@@ -4,9 +4,22 @@ import subprocess
 import os
 import json
 
+filePath , data , bookNames , curr , realPath = "" , "" , "" , "" , ""
 document_viewer = [ "zathura", "--mode", "fullscreen" ]
 read_toggle = True
+def choose_book(Chosen) :
+    global bookNames , curr , realPath , data , filePath
+    listprint(Chosen,in_Loop=False)
+    book_number = int(input("Enter the book number"))
+    curr = bookNames[book_number-1]
+    subprocess.run(document_viewer+[realPath+"/"+curr],stderr=subprocess.DEVNULL)
+    print("Curr is ",curr)
+    data["curr"] = curr
+    with open(filePath,'w') as FILE:
+        json.dump(data,FILE)
+
 def user_action(Chosen):
+        global bookNames , curr , realPath , data , filePath
         global read_toggle
         filePath = os.path.expanduser('~/.scripts/pickup/'+Chosen)
         with open(filePath) as FILE:
@@ -23,6 +36,7 @@ def user_action(Chosen):
             print("\033[33;1mr \033[0;1m-> \033[0;32;3mRe-read\033[0m")
             print("\033[33;1mq \033[0;1m-> \033[0;32;3mQuit\033[0m")
             print("\033[33;1ml \033[0;1m-> \033[0;32;3mList Books\033[0m")
+            print("\033[33;1mc \033[0;1m-> \033[0;32;3mChoose Book\033[0m")
             response = input("You Choose :")
             if response == "n" :
                 pb = bookNames.index(curr)+1
@@ -44,6 +58,8 @@ def user_action(Chosen):
                 listprint(Chosen)
             elif response == "r" :
                 read_toggle = True
+            elif response == "c" :
+                choose_book(Chosen)
             elif response == "q" :
                 quit()
         except KeyboardInterrupt:
@@ -85,7 +101,8 @@ def add_new(FILENAME) :
         else :
             quit()
 
-def listprint(Chosen):
+def listprint(Chosen,in_Loop=True):
+    global bookNames , curr , realPath , data
     global read_toggle
     read_toggle = False
     try : 
@@ -104,8 +121,9 @@ def listprint(Chosen):
                 print("\033[0;1;36m <- Currently here\033[0m",end='')
             print("")
             j += 1
-        while True :
-            user_action(Chosen)
+        if in_Loop :
+            while True :
+                user_action(Chosen)
     except KeyboardInterrupt:
             print("Interrupted by Keyboard")
             quit()
@@ -144,6 +162,7 @@ def readbook() :
 
 
 def main():
+    Playlists =""
     parser = argparse.ArgumentParser(description="Pick up Where you left off",)
     parser.add_argument('-n','--add',metavar='FILENAME',type=str,help='Adds the given folder to library')
     parser.add_argument('-l','--list',action='store_true',help='Prints the current list')
@@ -173,7 +192,7 @@ def main():
                         print(f"\033[31;1mCheck if you entered a valid number\033[0m")
                         quit()
             
-            listprint("Oregairu")
+            listprint(Chosen)
 
     if args.read :
         readbook()
