@@ -3,7 +3,7 @@
 #include "movestack.c"
 
 /* appearance */
-static const char *fonts[]          = { "Jetbrains Mono:size=12:style=Bold" };
+static const char *fonts[]          = { "Jetbrains Mono:size=10:style=Bold" };
 static const unsigned int borderpx  = 1;        /* border pixel of windows */
 static const unsigned int snap      = 1;       /* snap pixel */
 static const int swallowfloating    = 0;        /* 1 means swallow floating windows by default */
@@ -91,7 +91,7 @@ static const char *searchemoji[]  = { "emoji.sh", NULL };
 static const char *brightnesscmd[][4] = {{"brightnessctl","set","1%-", NULL},{"brightnessctl","set","1+%", NULL}};
 //static const char *volumekeys[][8] = {{"amixer","-D","pulse","set","Master","1+","toggle",NULL},{"amixer","-q","sset","'Master'","5%+",NULL},{"amixer","-q","sset","'Master'","5%-",NULL}};
 static const char *volumekeys[][8] = {{"pactl","set-sink-mute","3","toggle",NULL},{"pactl","set-sink-volume","3","+1%",NULL},{"pactl","set-sink-volume","3","-1%",NULL}};
-static const char *applet_Command[]  = { "st","-f","JetBrains Mono:size=14","-e","applet_selector" ,NULL };
+static const char *applet_Command[]  = { "st","-f","JetBrains Mono:size=10","-e","applet_selector" ,NULL };
 //
 static const char *screenshot[][3] = {{"screenshot",NULL},{"screenshot","-s",NULL}};
 static const Key keys[] = {

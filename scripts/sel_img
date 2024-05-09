@@ -121,8 +121,6 @@ if not DIRS :
     quit()
 
 LIST_ITEMS = DIRS
-dirpath = os.path.expanduser('~/Pictures/Backgrounds/Anime/rezero')
-ARRAY = os.listdir(dirpath)
 root = tk.Tk()
 frame = tk.Frame(root, **frame_style)
 frame.pack(fill=tk.BOTH,expand=True)

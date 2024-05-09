@@ -4,6 +4,4 @@ if [ -z $user ]
 then
 user="test"
 fi
-
-
 sshfs "$user"@127.0.0.1:/home/$user $HOME/Qemu/VMs/inco/ -C  -p 60022

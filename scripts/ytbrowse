@@ -33,8 +33,8 @@ done
 ####################################################
 
 [ -z "$searchquery" ] && searchquery="$(:|dmenu -p "Searchquery" )"
-[ "$TERM" == "dumb" ] || menu="fzf -m"
 [ -z "$menu" ] && menu="dmenu -l 30"
+#[ "$TERM" == "dumb" ] || menu="fzf -m"
 
 if [ "$searchquery" ]
 then

@@ -2,7 +2,7 @@
 menu="$(for j in $@; do echo $j; done | grep '^-m=' | awk -F '=' '{print $2}')"
 FILENAME="$(for j in $@; do echo $j; done | grep -v '^-m=')"
 [ "$menu" ] || menu="dmenu -l 30"
-if [ ! $FILENAME ]
+if [ ! "$FILENAME" ]
 then
 FILENAME="$(find $HOME  -type f  | $menu -i)"
 #FILENAME="$(fzf --preview="timg {} -g100x100 || batcat {} --color=always")"
@@ -40,5 +40,5 @@ case $FILEEXTENTION in
 esac
 OPTS=""
 #[ "$GOOD_APP" = "$DOCUMENT_VIEWER" ] && OPTS="--mode fullscreen"
-[ $FILEEXTENTION ] && $GOOD_APP "$FILENAME" $OPTS
+[ "$FILEEXTENTION" ] && $GOOD_APP "$FILENAME" $OPTS
 fi

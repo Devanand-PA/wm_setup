@@ -10,13 +10,16 @@ read_toggle = True
 def choose_book(Chosen) :
     global bookNames , curr , realPath , data , filePath
     listprint(Chosen,in_Loop=False)
-    book_number = int(input("Enter the book number"))
-    curr = bookNames[book_number-1]
-    subprocess.run(document_viewer+[realPath+"/"+curr],stderr=subprocess.DEVNULL)
-    print("Curr is ",curr)
-    data["curr"] = curr
-    with open(filePath,'w') as FILE:
-        json.dump(data,FILE)
+    book_number = int(input("Enter the book number :"))
+    if book_number-1 in range(len(bookNames)) :
+        curr = bookNames[book_number-1]
+        subprocess.run(document_viewer+[realPath+"/"+curr],stderr=subprocess.DEVNULL)
+        print("Curr is ",curr)
+        data["curr"] = curr
+        with open(filePath,'w') as FILE:
+            json.dump(data,FILE)
+    else :
+        print("\033[31mPick a proper book number\033[0m")
 
 def user_action(Chosen):
         global bookNames , curr , realPath , data , filePath

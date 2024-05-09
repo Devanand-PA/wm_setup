@@ -24,9 +24,8 @@ if [ "$theme" ]
 then
 wal -s -n $backend $col_mode -i "$theme" 
 walscript $alpha $col_mode
-#sudo cp "$theme" /usr/share/wallpapers/wal
+sudo cp "$theme" /usr/share/wallpapers/wal
 cd $HOME/sourced/wm_setup/dmenu
-cp $HOME/.cache/wal/colors-wal-dmenu.h $HOME/sourced/wm_setup/dmenu/colors.h
 sudo make clean install
 cd $HOME/sourced/wm_setup/dwm
 sudo make clean install
