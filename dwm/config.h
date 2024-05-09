@@ -70,46 +70,38 @@ static const Layout layouts[] = {
 
 /* helper for spawning shell commands in the pre dwm-5.0 fashion */
 #define SHCMD(cmd) { .v = (const char*[]){ "/bin/sh", "-c", cmd, NULL } }
-
+#define TERM "st"
 /* commands */
 static char dmenumon[2] = "0"; /* component of dmenucmd, manipulated in spawn() */
 static const char *dmenucmd[] = { "dmenu_run", "-m", dmenumon,NULL };
-static const char *browsercmd[]={"firefox","-P","Personal", NULL};
-static const char *incognitocmd[]={"chromium","--incognito", NULL};
-static const char *killall_mons_cmd[]={"zutty","-e","killmons", NULL};
-static const char *browser2cmd[]={"gnome-commander", NULL};
-static const char *Record_script[]={"Record_script", NULL};
-static const char *mailcmd[]={"firefox","-P","IISER", NULL};
 //Terminal spawned
-static const char *termcmd[]  = { "st", NULL };
 static const char *searchcmd[]  = { "st","-c","st-fzf", "-e" , "filsrc","-m=fzf", NULL };
-static const char *spawnvimcmd[]  = { "st", "-e" , "nvim", NULL };
-static const char *screenshot_viewer[] = {"vscrot",NULL};
 //
 static const char *window_switcher_rofi[]  = { "rofi", "-show", "window", "-icon-theme", "Papirus" ,"-show-icons",  "-font", "JetBrains Mono  14" , NULL };
-static const char *searchemoji[]  = { "emoji.sh", NULL };
 static const char *brightnesscmd[][4] = {{"brightnessctl","set","1%-", NULL},{"brightnessctl","set","1+%", NULL}};
 //static const char *volumekeys[][8] = {{"amixer","-D","pulse","set","Master","1+","toggle",NULL},{"amixer","-q","sset","'Master'","5%+",NULL},{"amixer","-q","sset","'Master'","5%-",NULL}};
 static const char *volumekeys[][8] = {{"pactl","set-sink-mute","3","toggle",NULL},{"pactl","set-sink-volume","3","+1%",NULL},{"pactl","set-sink-volume","3","-1%",NULL}};
 static const char *applet_Command[]  = { "st","-f","JetBrains Mono:size=10","-e","applet_selector" ,NULL };
-//
 static const char *screenshot[][3] = {{"screenshot",NULL},{"screenshot","-s",NULL}};
+
+//
+//
 static const Key keys[] = {
 	/* modifier                     key     			function        argument */
 	{ MODKEY,                       XK_space,			spawn,          {.v = dmenucmd } },
-	{ MODKEY,	                XK_x, 				spawn,          {.v = termcmd } },
+	{ MODKEY,	                XK_x, 				spawn,          {.v = (const char*[]){TERM , NULL} } },
+	{ MODKEY,			XK_t,				spawn,		SHCMD("st -e vi ~/.peronal/thingstodo.md") },
 	{ MODKEY,	                XK_s, 				spawn,          {.v = searchcmd } },
 	{ MODKEY|ShiftMask,		XK_s, 				spawn,          {.v = applet_Command } },
-	{ MODKEY,			XK_w, 				spawn,          {.v = screenshot_viewer } },
-	{ MODKEY,	                XK_e, 				spawn,          {.v = searchemoji } },
-	{ MODKEY,	                XK_m, 				spawn,          {.v = mailcmd } },
-	{ MODKEY,	                XK_n, 				spawn,          {.v = spawnvimcmd } },
+	{ MODKEY,			XK_w, 				spawn,          {.v = (const char*[]){"vscrot",NULL} } },
+	{ MODKEY,	                XK_e, 				spawn,          {.v = (const char*[]){"emoji.sh", NULL} } },
+	{ MODKEY,	                XK_m, 				spawn,          {.v = (const char*[]){"mail",NULL} } },
+	{ MODKEY,	                XK_n, 				spawn,          {.v = (const char*[]){"st","-e","nvim",NULL} } },
 	{ MODKEY|Mod1Mask,		XK_r,   			quit,           {1} }, 
-	{ MODKEY,	                XK_p, 				spawn,          {.v = incognitocmd } },
+	{ MODKEY,	                XK_p, 				spawn,          {.v = (const char*[]){"firefox","--private-window",NULL} } },
 	{ MODKEY|ShiftMask,		XK_Tab, 			spawn,          {.v = window_switcher_rofi} },
-	{ MODKEY,	                XK_b, 				spawn,          {.v = browsercmd } },
-	{ MODKEY,			XK_v, 				spawn,          {.v = browser2cmd } },
-	{ MODKEY,			XK_r, 				spawn,          {.v = Record_script } },
+	{ MODKEY,	                XK_b, 				spawn,          {.v = (const char*[]){"firefox","-P","Personal",NULL} } },
+	{ MODKEY,			XK_v, 				spawn,          {.v = (const char*[]){"gnome-commander",NULL} } },
 	{ 0,		                XF86XK_MonBrightnessDown, 	spawn,		{.v = brightnesscmd[0] } },
 	{ 0,		                XF86XK_MonBrightnessUp, 	spawn,  	{.v = brightnesscmd[1] } },
 	{ 0,		                XF86XK_AudioMute, 		spawn,        	{.v = volumekeys[0] } },
@@ -120,7 +112,6 @@ static const Key keys[] = {
 	{ MODKEY|ShiftMask,             XK_b,      			togglebar, 	{0} },
 	{ MODKEY,                       XK_j,      			focusstack,     {.i = +1 } },
 	{ MODKEY,                       XK_k,      			focusstack,     {.i = -1 } },
-	{ MODKEY|Mod1Mask,              XK_k,      			spawn,     	{.v = killall_mons_cmd } },
 	{ MODKEY,                       XK_i,      			incnmaster,     {.i = +1 } },
 	{ MODKEY,                       XK_d,      			incnmaster,     {.i = -1 } },
 	{ MODKEY,                       XK_h,      			setmfact,       {.f = -0.05} },
@@ -128,7 +119,7 @@ static const Key keys[] = {
 	{ MODKEY|ShiftMask,             XK_Return, 			zoom,           {0} },
 	{ MODKEY,                       XK_Tab,    			view,           {0} },
 	{ MODKEY,	                XK_q,      			killclient,     {0} },
-	{ MODKEY,                       XK_t,      			setlayout,      {.v = &layouts[0]} },
+	{ MODKEY|ShiftMask,             XK_t,      			setlayout,      {.v = &layouts[0]} },
 	{ MODKEY|ShiftMask,             XK_f,      			setlayout,      {.v = &layouts[1]} },
 	{ MODKEY|ShiftMask,             XK_j,      			movestack,      {.i = +1 } },
 	{ MODKEY|ShiftMask,             XK_k,      			movestack,      {.i = -1 } },
