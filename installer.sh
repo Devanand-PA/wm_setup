@@ -6,8 +6,8 @@ Common_utils="fonts-jetbrains-mono alsa-utils acpi neovim links sxiv mpv fzf cur
 dist=$(lsb_release -i | grep ID | awk -F ':\t' '{print $2}')
 case $dist in
 	"Debian" | "Ubuntu")
-		sudo apt install nala && alias apt=nala
-		sudo apt install $Debian_deps $Common_utils ;;
+		#sudo apt install nala && alias apt=nala
+		sudo apt install $Debian_deps $Common_utils --no-install-recommends ;;
 
 	"Arch" )
 	sudo pacman -Sy $Arch_deps $Common_utils ;;
