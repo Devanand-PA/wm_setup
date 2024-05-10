@@ -16,6 +16,19 @@ shopt -s histappend
 HISTSIZE=-1
 HISTFILESIZE=-1
 
+
+
+# check the window size after each command and, if necessary,
+# update the values of LINES and COLUMNS.
+shopt -s checkwinsize
+
+# If set, the pattern "**" used in a pathname expansion context will
+# match all files and zero or more directories and subdirectories.
+shopt -s globstar
+PS1='[\[\033[0;32;3;1m\]\u\[\033[0m\]:\[\033[0;1;34m\]\w\[\033[00m\]]:-> '
+
+###########[ Functions ]#################
+
 searchquotes(){
  quote_to_search="$@"
  if [ $quote_to_search ]
@@ -40,16 +53,9 @@ printf "\e[0;2;3m"
 cat $(ls $HOME/.scripts/quotes/* $HOME/.scripts/enlightenment/* | shuf | head -1)
 printf "\e[0m"
 }
-# check the window size after each command and, if necessary,
-# update the values of LINES and COLUMNS.
-shopt -s checkwinsize
 
-# If set, the pattern "**" used in a pathname expansion context will
-# match all files and zero or more directories and subdirectories.
-shopt -s globstar
-PS1='[\[\033[0;32;3;1m\]\u\[\033[0m\]:\[\033[0;1;34m\]\w\[\033[00m\]]:-> '
 
-###########[ Functions ]#################
+
 
 
 j_n() {
@@ -82,6 +88,17 @@ k() {
 	[ "$(grep "$curr_dir" ~/.cd_history)" ] || echo "$curr_dir" >> ~/.cd_history
 }
 
+h(){
+	new_dir="$(cat $HOME/.cd_history | fzf --tac)"
+	if [ "${new_dir}" ] && [ "$new_dir" != "$(pwd)" ]
+	then
+	old_dir="$(pwd)"
+	cd "${new_dir}"
+	[ "$new_dir" ] && echo "$new_dir" >> ~/.cd_history
+	fi
+}
+
+
 searchpkg() {
 	unbuffer nala search "$@"  | less -R
 }
@@ -112,9 +129,12 @@ command cd "$new_dir"
 eval "$(dircolors -b)"
 ###########[ Aliases ]###############
 alias activate='source $HOME/venv/bin/activate' 
+alias thingstodo="vi ~/.peronal/thingstodo.md"
+alias pycalc='python -ic "from numpy import sin , cos , tan , e , pi , log"'
+alias sxiv='sxiv -ab'
 alias feh='feh -B black --scale-down --keep-zoom-vp'
 alias rm='trash'
-alias r="pickup -r"
+alias l="pickup -l"
 alias less='less -RM'
 alias tt="cat ~/Documents/endsem_schedule.txt"
 alias ..='cd .. && echo "$(pwd)" >> ~/.cd_history'
@@ -127,7 +147,7 @@ alias pd='find $HOME -type d | fzf '
 alias pf='find $HOME ! -type d | fzf '
 alias subplay='mpv --no-video  --player-operation-mode=pseudo-gui -fs'
 alias sudo='sudo '
-alias apt='nala'
+#alias apt='nala'
 alias cal='ncal'
 alias ll='ls -lh'
 alias la='ls -lAh'
@@ -142,6 +162,7 @@ alias ytbrowse='ytbrowse -m="fzf -m"'
 alias :h='info bash'
 alias zathura='zathura --mode fullscreen'
 alias infread='nano -0 -i -x -t /tmp/nano_temp && rm /tmp/nano_temp'
+
 #alias sudo='doas --'
 #####################################
 if [ -f ~/.bash_aliases ]
@@ -162,7 +183,7 @@ fi
 
 set -o vi
 EDITOR="nvim"
-#source $HOME/venv/bin/activate
+source $HOME/venv/bin/activate
 #quotes
 #cat $HOME/.cache/wal/sequences
 . "$HOME/.cargo/env"
