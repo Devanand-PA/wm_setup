@@ -7,23 +7,11 @@ case $- in
     *i*) ;;
       *) return;;
 esac
-# don't put duplicate lines or lines starting with space in the history.
-# See bash(1) for more options
 HISTCONTROL=ignoreboth
-# append to the history file, don't overwrite it
 shopt -s histappend
-# for setting history length see HISTSIZE and HISTFILESIZE in bash(1)
 HISTSIZE=-1
 HISTFILESIZE=-1
-
-
-
-# check the window size after each command and, if necessary,
-# update the values of LINES and COLUMNS.
 shopt -s checkwinsize
-
-# If set, the pattern "**" used in a pathname expansion context will
-# match all files and zero or more directories and subdirectories.
 shopt -s globstar
 PS1='[\[\033[0;32;3;1m\]\u\[\033[0m\]:\[\033[0;1;34m\]\w\[\033[00m\]]:-> '
 
@@ -47,6 +35,15 @@ searchquotes(){
  printf "\e[0m"
 }
 
+ddg() {
+if [ "$1" ]
+then
+searchquery="$(echo $1 | sed 's/ /+/g')"
+links https://duckduckgo.com/?t=ftsa&q="${searchquery}"
+else
+	links https://lite.duckduckgo.com/lite
+fi
+}
 
 quotes(){
 printf "\e[0;2;3m"
@@ -54,17 +51,13 @@ cat $(ls $HOME/.scripts/quotes/* $HOME/.scripts/enlightenment/* | shuf | head -1
 printf "\e[0m"
 }
 
-
-
-
-
 j_n() {
 	new_dir="$(find $HOME -type d  | fzf --preview='tree {}')"
 	[ "$new_dir" ]
 	if [ "${new_dir}" ] && [ "$new_dir" != "$(pwd)" ]
 	then
 	old_dir="$(pwd)"
-	cd "${new_dir}"
+	command cd "${new_dir}"
 	new_dir="$(pwd)"
 	echo "$new_dir" >> ~/.cd_history
 	fi
@@ -75,7 +68,7 @@ j() {
 	if [ "${new_dir}" ] && [ "$new_dir" != "$(pwd)" ]
 	then
 	old_dir="$(pwd)"
-	cd "${new_dir}"
+	command cd "${new_dir}"
 	echo "$new_dir" >> ~/.cd_history
 	fi
 }
@@ -84,7 +77,7 @@ k() {
 	curr_dir="$old_dir"
 	[ "$(grep "$old_dir" ~/.cd_history)" ] || echo "$old_dir" >> ~/.cd_history
 	old_dir="$(pwd)"
-	cd "$curr_dir"
+	command cd "$curr_dir"
 	[ "$(grep "$curr_dir" ~/.cd_history)" ] || echo "$curr_dir" >> ~/.cd_history
 }
 
@@ -93,11 +86,10 @@ h(){
 	if [ "${new_dir}" ] && [ "$new_dir" != "$(pwd)" ]
 	then
 	old_dir="$(pwd)"
-	cd "${new_dir}"
+	command cd "${new_dir}"
 	[ "$new_dir" ] && echo "$new_dir" >> ~/.cd_history
 	fi
 }
-
 
 searchpkg() {
 	unbuffer nala search "$@"  | less -R
@@ -112,18 +104,30 @@ picktheme() {
 	fi
 
 }
-
+shopt -s autocd
 cd() {
+new_dir=""
+ARG_STOP=0
+for i in "$@"
+do
+	case "$i" in
+		--)
+		ARG_STOP=1 ;;
+		-* )
+
+		[ "$ARG_STOP"=1 ] || ARGS+=" $i" ;;
+		* )
+		[ "$i" ] && new_dir="$i" ;;
+	esac
+done
+ARGS_STOP=0
 old_dir="$(pwd)" 
 [ "$(grep "$old_dir" ~/.cd_history)" ] || echo "$old_dir" >> ~/.cd_history
-
-new_dir="$1"	
 [ "$new_dir" ] || new_dir="$HOME"
 new_dir="$(realpath "${new_dir}")"
-command cd "$new_dir"
+command cd "$new_dir" $ARGS
 [ "$new_dir" ] && echo "$new_dir" >> ~/.cd_history
 }
-
 
 #########################################
 eval "$(dircolors -b)"
@@ -138,7 +142,6 @@ alias l="pickup -l"
 alias less='less -RM'
 alias tt="cat ~/Documents/endsem_schedule.txt"
 alias ..='cd .. && echo "$(pwd)" >> ~/.cd_history'
-alias red="printf '\033[32;3m' ; read -e ; printf '\033[0m'"
 alias bat='batcat'
 alias python='python3'
 alias ls='ls --color=auto'
@@ -146,13 +149,12 @@ alias ls='ls --color=auto'
 alias pd='find $HOME -type d | fzf '
 alias pf='find $HOME ! -type d | fzf '
 alias subplay='mpv --no-video  --player-operation-mode=pseudo-gui -fs'
-alias sudo='sudo '
+#alias sudo='sudo '
 #alias apt='nala'
 alias cal='ncal'
 alias ll='ls -lh'
 alias la='ls -lAh'
 alias lt='ll -t'
-alias ddg='links https://lite.duckduckgo.com/lite'
 alias schedule='vi $HOME/.scripts/schedule/schedule.md'
 alias filsrc="filsrc -m=fzf"
 alias tl='vi $HOME/.scripts/todo/list.md'
@@ -162,13 +164,11 @@ alias ytbrowse='ytbrowse -m="fzf -m"'
 alias :h='info bash'
 alias zathura='zathura --mode fullscreen'
 alias infread='nano -0 -i -x -t /tmp/nano_temp && rm /tmp/nano_temp'
-
+alias o='xdg-open'
+alias c=cd
 #alias sudo='doas --'
+#
 #####################################
-if [ -f ~/.bash_aliases ]
-then
-	source ~/.bash_aliases
-fi
 
 if ! shopt -oq posix; then
   if [ -f /usr/share/bash-completion/bash_completion ]; then
@@ -180,10 +180,9 @@ fi
 
 #################[Scripts to be run after starting bashrc]################
 #todolist
-
 set -o vi
 EDITOR="nvim"
 source $HOME/venv/bin/activate
 #quotes
 #cat $HOME/.cache/wal/sequences
-. "$HOME/.cargo/env"
+#. "$HOME/.cargo/env"
