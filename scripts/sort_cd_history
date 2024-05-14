@@ -3,12 +3,22 @@ import os
 import sys
 ## Excluded Paths
 excluded_paths = [ "" , os.path.expanduser('~') , "/home"]
+FILTERS="dir not in excluded_paths"
+ARGS = []
 if sys.argv :
-    ARG_FILE = sys.argv[1]
+    for i in range(len(sys.argv)) :
+        if sys.argv[i][0] == "-" :
+            ARGS.append(sys.argv[i])
+        else :
+            ARG_FILE = sys.argv[i]
 with open(os.path.expanduser(ARG_FILE)) as FILE:
     cd_history = list(FILE.read().split('\n'))
 
 log = ""
+print("ARGS is", ARGS)
+if "-d" in ARGS :
+    FILTERS+=" and os.path.isdir(dir)"
+
 
 #======[LOGS]=======
 log += "cd_history is:\n"
@@ -48,7 +58,7 @@ for i in sorted_array :
 for i in output_array :
     for j in range(len(i)) :
         dir = i[j]
-        if dir not in excluded_paths:
+        if eval(FILTERS):
             print(dir)
 
 with open(os.path.expanduser('~/.scripts/logs/sort_cd_history.log'),'w') as FILE:
