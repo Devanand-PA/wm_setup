@@ -15,8 +15,8 @@ shopt -s checkwinsize
 shopt -s globstar
 PS1='[\[\033[0;32;3;1m\]\u\[\033[0m\]:\[\033[0;1;34m\]\w\[\033[00m\]]:-> '
 
+shopt -s xpg_echo
 ###########[ Functions ]#################
-
 searchquotes(){
  quote_to_search="$@"
  if [ $quote_to_search ]
@@ -45,11 +45,37 @@ else
 fi
 }
 
+searchpkg() {
+	unbuffer nala search "$@"  | less -R
+}
+
+picktheme() {
+	bg="$(sel_img $(find $HOME/Pictures/Backgrounds -type d))"
+	if [ "$bg" ]
+	then
+	settheme "$bg" $@
+	setbg "$bg"
+	fi
+
+}
 quotes(){
 printf "\e[0;2;3m"
 cat $(ls $HOME/.scripts/quotes/* $HOME/.scripts/enlightenment/* | shuf | head -1)
 printf "\e[0m"
 }
+
+o() {
+if [ "$1" ]
+then
+	( xdg-open "$1" && ( echo "$1" >> ~/.xdg_open_history ) ) > /dev/null
+else
+	sel_file="$(sort_cd_history ~/.xdg_open_history | fzf)"
+	[ "$sel_file" ] && ( xdg-open "$sel_file" && ( echo "${sel_file}" >> ~/.xdg_open_history ) ) > /dev/null
+	unset sel_file
+fi
+}
+
+#  NOTE : These functions are here for extra `cd` functionality in the interactive bash shell
 
 j_n() {
 	new_dir="$(find $HOME -type d  | fzf --preview='tree {}')"
@@ -64,7 +90,7 @@ j_n() {
 }
 
 j() {
-	new_dir="$(sort_cd_history | fzf --height=10% --tac)"
+	new_dir="$(sort_cd_history ~/.cd_history | fzf --height=10% --tac)"
 	if [ "${new_dir}" ] && [ "$new_dir" != "$(pwd)" ]
 	then
 	old_dir="$(pwd)"
@@ -91,19 +117,6 @@ h(){
 	fi
 }
 
-searchpkg() {
-	unbuffer nala search "$@"  | less -R
-}
-
-picktheme() {
-	bg="$(sel_img $(find $HOME/Pictures/Backgrounds -type d))"
-	if [ "$bg" ]
-	then
-	settheme "$bg" $@
-	setbg "$bg"
-	fi
-
-}
 shopt -s autocd
 cd() {
 new_dir=""
@@ -125,12 +138,13 @@ old_dir="$(pwd)"
 [ "$(grep "$old_dir" ~/.cd_history)" ] || echo "$old_dir" >> ~/.cd_history
 [ "$new_dir" ] || new_dir="$HOME"
 new_dir="$(realpath "${new_dir}")"
-command cd "$new_dir" $ARGS
-[ "$new_dir" ] && echo "$new_dir" >> ~/.cd_history
+command cd "$new_dir" $ARGS && echo "$new_dir" >> ~/.cd_history
 }
 
 #########################################
 eval "$(dircolors -b)"
+
+#  NOTE : Put all your aliases here.
 ###########[ Aliases ]###############
 alias activate='source $HOME/venv/bin/activate' 
 alias thingstodo="vi ~/.peronal/thingstodo.md"
@@ -164,7 +178,6 @@ alias ytbrowse='ytbrowse -m="fzf -m"'
 alias :h='info bash'
 alias zathura='zathura --mode fullscreen'
 alias infread='nano -0 -i -x -t /tmp/nano_temp && rm /tmp/nano_temp'
-alias o='xdg-open'
 alias c=cd
 #alias sudo='doas --'
 #
