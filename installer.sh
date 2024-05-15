@@ -26,7 +26,7 @@ sudo make clean install
 cd ../dwm_status/
 sudo make clean install
 cd ..
-
+sudo cp ./dwm.desktop /usr/share/xsessions/
 ## Python
 python -m venv $HOME/venv
 source $HOME/venv/bin/activate
