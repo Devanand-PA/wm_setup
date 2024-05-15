@@ -3,7 +3,7 @@
 #include "movestack.c"
 
 /* appearance */
-static const char *fonts[]          = { "Jetbrains Mono:size=10:style=Bold" };
+static const char *fonts[]          = { "Liberation Mono:size=10:style=Bold" };
 static const unsigned int borderpx  = 1;        /* border pixel of windows */
 static const unsigned int snap      = 1;       /* snap pixel */
 static const int swallowfloating    = 0;        /* 1 means swallow floating windows by default */
@@ -90,7 +90,7 @@ static const Key keys[] = {
 	/* modifier                     key     			function        argument */
 	{ MODKEY,                       XK_space,			spawn,          {.v = dmenucmd } },
 	{ MODKEY,	                XK_x, 				spawn,          {.v = (const char*[]){TERM , NULL} } },
-	{ MODKEY,			XK_t,				spawn,		SHCMD("st -e vi ~/.thingstodo.md") },
+	{ MODKEY,			XK_t,				spawn,		SHCMD("st -e vi ~/.peronal/thingstodo.md") },
 	{ MODKEY,	                XK_s, 				spawn,          {.v = searchcmd } },
 	{ MODKEY|ShiftMask,		XK_s, 				spawn,          {.v = applet_Command } },
 	{ MODKEY,			XK_w, 				spawn,          {.v = (const char*[]){"vscrot",NULL} } },

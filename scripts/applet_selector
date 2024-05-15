@@ -33,10 +33,10 @@ case $MANAGER in
 	"Network Settings" )
 	nmtui	;;
 	"Edit Dwm Config" )
-	 cd $HOME/sourced/wm_setup/dwm/
+	 cd $WM_SETUP_DIR/dwm/
 	 cp config.def.h /tmp/config.def.h
 	 vi /tmp/config.def.h
-	 if [ "$(diff $HOME/sourced/wm_setup/dwm/config.def.h /tmp/config.def.h)" ]
+	 if [ "$(diff $WM_SETUP_DIR/dwm/config.def.h /tmp/config.def.h)" ]
 	 then
 	 	cp  /tmp/config.def.h config.def.h
 	 	rm /tmp/config.def.h

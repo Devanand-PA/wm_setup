@@ -6,7 +6,7 @@ color_file = os.path.expanduser("~/.cache/wal/colors")
 with open(color_file) as FILE :
     wal_colors = list(FILE.read().split('\n'))
 
-
+WM_SETUP_DIR=os.path.expanduser(os.getenv('WM_SETUP_DIR'))
 alpha_val="0.75"
 parser = argparse.ArgumentParser(description="walscript")
 parser.add_argument('-a','--alpha',metavar='alpha_val',type=str,help='Specify the alpha value')
@@ -36,7 +36,7 @@ with open(vim_color,'w') as FILE:
 
 # dwm
 wal_dwm = os.path.expanduser('~/.cache/wal/colors-wal-dwm.h') 
-dwm_color = os.path.expanduser('~/sourced/wm_setup/dwm/colors.h') 
+dwm_color = os.path.join(WM_SETUP_DIR,'dwm/colors.h') 
 #dwm_color = os.path.expanduser('~/trashtesst/dwm/colors.h') 
 xresources = os.path.expanduser('~/.Xresources')
 
@@ -107,11 +107,11 @@ static const char *colors[SchemeLast][2] = {{
 }};
 '''
 
-with open(os.path.expanduser('~/sourced/wm_setup/dmenu/colors.h'),'w') as FILE:
+with open(os.path.join(WM_SETUP_DIR,'dmenu/colors.h'),'w') as FILE:
     FILE.write(dmenu_res)
 
 # suckless st
-st_colorconfig = os.path.expanduser("~/sourced/wm_setup/st/colors.h")
+st_colorconfig = os.path.join(WM_SETUP_DIR,"st/colors.h")
 st_res = f'''
 static const char *colorname[] = {{
 "{wal_colors[0]}",      //  "black",
