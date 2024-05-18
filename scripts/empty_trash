@@ -3,16 +3,16 @@ import shutil
 import os
 from contextlib import suppress
 import sys
-from iterfzf import iterfzf
+import subprocess
 import json
 
 args = sys.argv[1:]
 
-def print_trash():
-    for i in os.listdir(os.path.expanduser('~/Trash/')):
-        yield i
 
 def select_Trash() :
+    Tlist=""
+    for i in os.listdir(os.path.expanduser('~/Trash/')):
+        Tlist += i+"\n"
     trash_data = os.path.expanduser("~/.trash_files/trash_data")
     with open(trash_data)  as FILE :
         DATA = list(FILE.read().split('\n'))
@@ -20,7 +20,10 @@ def select_Trash() :
     DATA2 = []
     
     if os.listdir(os.path.expanduser('~/Trash/')):
-        sel = iterfzf(print_trash(),multi=True)
+        sel = subprocess.check_output(["fzf","-m"],input=bytes(Tlist,"utf-8"))
+        sel = sel.decode("utf-8")
+        sel = list(sel.split('\n'))
+        sel.pop(-1)
         if not sel  :
             quit()
         unsel = []
@@ -64,9 +67,9 @@ def select_Trash() :
         print("No Trash to remove")
 
 def main() :
+    trash_data = os.path.expanduser("~/.trash_files/trash_data")
     if "-a" in args :
         shutil.rmtree(os.path.expanduser('~/Trash'))
-        trash_data = os.path.expanduser("~/.trash_files/trash_data")
         with open(trash_data,'w')  as FILE :
             FILE.write('')
         os.mkdir(os.path.expanduser('~/Trash'))

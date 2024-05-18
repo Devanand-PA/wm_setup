@@ -92,6 +92,8 @@ static const Key keys[] = {
 	{ MODKEY,	                XK_x, 				spawn,          {.v = (const char*[]){TERM , NULL} } },
 	{ MODKEY,			XK_t,				spawn,		SHCMD("st -e vi ~/.peronal/thingstodo.md") },
 	{ MODKEY,	                XK_s, 				spawn,          {.v = searchcmd } },
+	{ MODKEY|Mod1Mask,	        XK_s, 				spawn,          {.v = (const char*[]){"bookmarks","save",NULL} } },
+	{ MODKEY|Mod1Mask,	        XK_b, 				spawn,          {.v = (const char*[]){"bookmarks","output",NULL} } },
 	{ MODKEY|ShiftMask,		XK_s, 				spawn,          {.v = applet_Command } },
 	{ MODKEY,			XK_w, 				spawn,          {.v = (const char*[]){"vscrot",NULL} } },
 	{ MODKEY,			XK_r, 				spawn,          {.v = (const char*[]){"st","-e","pickup","-l",NULL} } },

@@ -1,7 +1,7 @@
 #!/bin/sh
-Debian_deps="gcc make libxinerama-dev libxft-dev fontconfig fonts-liberation libx11-dev xinit x11-session-utils build-essential fonts-noto-cjk-extra fonts-font-awesome libxcb-xinerama0-dev libxcb1-dev libx11-xcb-dev libx11-xcb-dev bsdmainutils libxcb-res0-dev build-essential make alacritty python3-venv fonts-firacode"
+Debian_deps="gcc make libxinerama-dev libxft-dev fontconfig fonts-liberation libx11-dev xinit x11-session-utils build-essential fonts-noto-cjk-extra fonts-font-awesome libxcb-xinerama0-dev libxcb1-dev libx11-xcb-dev libx11-xcb-dev bsdmainutils libxcb-res0-dev build-essential make alacritty python3-venv fonts-firacode expect"
 Arch_deps="libxinerama libxft fontconfig ttf-liberation xorg-xinit curl wget base-devel alacritty ttf-fira-code python3-tk python3-pil python3-pil.imagetk"
-Common_utils="fonts-jetbrains-mono alsa-utils acpi neovim links sxiv mpv fzf curl wget htop brightnessctl tk scrot"
+Common_utils="fonts-jetbrains-mono alsa-utils acpi neovim links sxiv mpv fzf curl wget htop brightnessctl tk scrot pipx"
 
 dist=$(lsb_release -i | grep ID | awk -F ':\t' '{print $2}')
 case $dist in
@@ -27,11 +27,7 @@ cd ../dwm_status/
 sudo make clean install
 cd ..
 sudo cp ./dwm.desktop /usr/share/xsessions/
-## Python
-python -m venv $HOME/venv
-source $HOME/venv/bin/activate
-pip install iterfzf
-pip install pywal
+pipx install pywal
 
 ###[Scripts]########
 mkdir -p $HOME/.local/bin

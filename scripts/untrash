@@ -1,14 +1,15 @@
-#!/bin/env python3
+#!/bin/python3
+import subprocess
 import os
 from contextlib import suppress
 import sys
-from iterfzf import iterfzf
 import json
 args = sys.argv[1:]
-def print_trash():
-    for i in os.listdir(os.path.expanduser('~/Trash/')):
-        yield i
-
+Ptrash = ""
+for i in os.listdir(os.path.expanduser('~/Trash/')):
+        Ptrash+=i+"\n"
+Ptrash = Ptrash[:-1]
+Ptrash = bytes(Ptrash,"utf-8")
 trash_data = os.path.expanduser("~/.trash_files/trash_data")
 with open(trash_data)  as FILE :
     DATA = list(FILE.read().split('\n'))
@@ -16,7 +17,10 @@ datas = []
 DATA2 = []
 
 if os.listdir(os.path.expanduser('~/Trash/')):
-    sel = iterfzf(print_trash(),multi=True)
+    sel = subprocess.check_output(["fzf","-m"],input=Ptrash)
+    sel = sel.decode("utf-8")
+    sel = list(sel.split('\n'))
+    sel.pop(-1)
     unsel = []
     for i in range(len(DATA)):
         if DATA[i] != "" :
