@@ -52,9 +52,9 @@ then
 	if [ $FORMAT ]
 	then
 	FORMAT="--format=$FORMAT"
-   	yt-dlp "${FORMAT}" -o "$HOME/Videos/yt-dlp/%(uploader)s/%(playlist)s/%(playlist_index)s - %(title)s.%(ext)s" "$URLLINK" 
+   	yt-dlp "${FORMAT}" -o "$HOME/Videos/yt-dlp/%(uploader)s/%(playlist)s/%(playlist_index)s - %(title)s.%(ext)s" $URLLINK
 	else
-   	yt-dlp  -o "$HOME/Videos/yt-dlp/%(uploader)s/%(playlist)s/%(playlist_index)s - %(title)s.%(ext)s" "$URLLINK" 
+   	yt-dlp  -o "$HOME/Videos/yt-dlp/%(uploader)s/%(playlist)s/%(playlist_index)s - %(title)s.%(ext)s" $URLLINK
 	fi
 else
 	while [ "$A" != "" ]
@@ -64,9 +64,9 @@ else
 	if [ $FORMAT ]
 	then
 	FORMAT="--ytdl-format=$FORMAT"
-	mpv --really-quiet "$URLLINK" ${FORMAT} --player-operation-mode=pseudo-gui
+	mpv --really-quiet $URLLINK ${FORMAT} --player-operation-mode=pseudo-gui
 	else
-	mpv --really-quiet "$URLLINK" --player-operation-mode=pseudo-gui 
+	mpv --really-quiet $URLLINK --player-operation-mode=pseudo-gui 
 	fi
 	A="$R"
 	done

@@ -89,6 +89,7 @@ static const char *screenshot[][3] = {{"screenshot",NULL},{"screenshot","-s",NUL
 static const Key keys[] = {
 	/* modifier                     key     			function        argument */
 	{ MODKEY,                       XK_space,			spawn,          {.v = dmenucmd } },
+	{ MODKEY|ControlMask,           XK_c,				spawn,          SHCMD("xclip -o | xclip -sel clip") },
 	{ MODKEY,	                XK_x, 				spawn,          {.v = (const char*[]){TERM , NULL} } },
 	{ MODKEY,			XK_t,				spawn,		SHCMD("st -e vi ~/.peronal/thingstodo.md") },
 	{ MODKEY,	                XK_s, 				spawn,          {.v = searchcmd } },
@@ -105,7 +106,6 @@ static const Key keys[] = {
 	{ MODKEY,	                XK_p, 				spawn,          {.v = (const char*[]){"firefox","--private-window",NULL} } },
 	{ MODKEY|ShiftMask,		XK_Tab, 			spawn,          {.v = window_switcher_rofi} },
 	{ MODKEY,	                XK_b, 				spawn,          {.v = (const char*[]){"firefox","-P","Personal",NULL} } },
-	{ MODKEY,			XK_v, 				spawn,          {.v = (const char*[]){"pcmanfm",NULL} } },
 	{ MODKEY,			XK_o, 				spawn,          {.v = (const char*[]){"st","-e","bash","-i","-c","o",NULL} } },
 	{ 0,		                XF86XK_MonBrightnessDown, 	spawn,		{.v = brightnesscmd[0] } },
 	{ 0,		                XF86XK_MonBrightnessUp, 	spawn,  	{.v = brightnesscmd[1] } },

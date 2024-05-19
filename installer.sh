@@ -23,9 +23,9 @@ cd ../dmenu/
 sudo make clean install
 cd ../st/
 sudo make clean install
-cd ../dwm_status/
+cd ../C_scripts/dwm_status/
 sudo make clean install
-cd ..
+cd ../..
 sudo cp ./dwm.desktop /usr/share/xsessions/
 pipx install pywal
 
