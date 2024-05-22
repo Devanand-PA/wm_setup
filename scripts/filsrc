@@ -1,6 +1,6 @@
 #!/bin/sh
 menu="$(for j in $@; do echo $j; done | grep '^-m=' | awk -F '=' '{print $2}')"
-FILENAME="$(for j in $@; do echo $j; done | grep -v '^-m=')"
+FILENAME="$(for j in "$@"; do echo $j; done | grep -v '^-m=')"
 [ "$menu" ] || menu="dmenu -l 30"
 if [ ! "$FILENAME" ]
 then

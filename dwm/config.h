@@ -3,7 +3,7 @@
 #include "movestack.c"
 
 /* appearance */
-static const char *fonts[]          = { "JetBrains Mono:size=10:style=Bold" };
+static const char *fonts[]          = { "Liberation Mono:size=10:style=Bold" };
 static const unsigned int borderpx  = 1;        /* border pixel of windows */
 static const unsigned int snap      = 1;       /* snap pixel */
 static const int swallowfloating    = 0;        /* 1 means swallow floating windows by default */
@@ -77,7 +77,7 @@ static const char *dmenucmd[] = { "dmenu_run", "-m", dmenumon,NULL };
 //Terminal spawned
 static const char *searchcmd[]  = { "st","-c","st-fzf", "-e" , "filsrc","-m=fzf", NULL };
 //
-static const char *window_switcher_rofi[]  = { "rofi", "-show", "window", "-icon-theme", "Papirus" ,"-show-icons",  "-font", "JetBrains Mono  14" , NULL };
+static const char *window_switcher_rofi[]  = { "rofi", "-show", "window", "-icon-theme", "Papirus" ,"-show-icons",  "-font", "JetBrains Mono  10" , NULL };
 static const char *brightnesscmd[][4] = {{"brightnessctl","set","1%-", NULL},{"brightnessctl","set","1+%", NULL}};
 //static const char *volumekeys[][8] = {{"amixer","-D","pulse","set","Master","1+","toggle",NULL},{"amixer","-q","sset","'Master'","5%+",NULL},{"amixer","-q","sset","'Master'","5%-",NULL}};
 static const char *volumekeys[][8] = {{"pactl","set-sink-mute","3","toggle",NULL},{"pactl","set-sink-volume","3","+1%",NULL},{"pactl","set-sink-volume","3","-1%",NULL}};
@@ -90,7 +90,8 @@ static const Key keys[] = {
 	/* modifier                     key     			function        argument */
 	{ MODKEY,                       XK_space,			spawn,          {.v = dmenucmd } },
 	{ MODKEY|ControlMask,           XK_c,				spawn,          SHCMD("xclip -o | xclip -sel clip") },
-	{ MODKEY,	                XK_x, 				spawn,          {.v = (const char*[]){TERM , NULL} } },
+	{ MODKEY,	                XK_x, 				spawn,          {.v = (const char*[]){TERM, NULL} } },
+	{ MODKEY|Mod1Mask,              XK_x, 				spawn,          {.v = (const char*[]){"tabbed","-k","st","-w" , NULL} } },
 	{ MODKEY,			XK_t,				spawn,		SHCMD("st -e vi ~/.peronal/thingstodo.md") },
 	{ MODKEY,	                XK_s, 				spawn,          {.v = searchcmd } },
 	{ MODKEY|Mod1Mask,	        XK_s, 				spawn,          {.v = (const char*[]){"bookmarks","save",NULL} } },
@@ -110,6 +111,7 @@ static const Key keys[] = {
 	{ 0,		                XF86XK_MonBrightnessDown, 	spawn,		{.v = brightnesscmd[0] } },
 	{ 0,		                XF86XK_MonBrightnessUp, 	spawn,  	{.v = brightnesscmd[1] } },
 	{ 0,		                XF86XK_AudioMute, 		spawn,        	{.v = volumekeys[0] } },
+	{ ShiftMask,	                XF86XK_AudioMute, 		spawn,        	{.v = (const char*[]){"vmscript",NULL} } },
 	{ 0,		                XF86XK_AudioRaiseVolume, 	spawn, 		{.v = volumekeys[1] } },
 	{ 0,		                XF86XK_AudioLowerVolume, 	spawn, 		{.v = volumekeys[2] } },
 	{ 0,				XK_Print,			spawn,		{.v = screenshot[0] } },
