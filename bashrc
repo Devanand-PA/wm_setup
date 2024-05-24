@@ -14,7 +14,9 @@ HISTFILESIZE=-1
 shopt -s checkwinsize
 shopt -s globstar
 PS1='[\[\033[0;32;3;1m\]\u\[\033[0m\]:\[\033[0;1;34m\]\w\[\033[00m\]]:-> '
+PROMPT_COMMAND='printf "\033]0;%s\007" "${PWD/#$HOME/"~"}"'
 
+shopt -s autocd
 shopt -s xpg_echo
 ###########[ Functions ]#################
 searchquotes(){
@@ -35,15 +37,7 @@ searchquotes(){
  printf "\e[0m"
 }
 
-ddg() {
-if [ "$1" ]
-then
-searchquery="$(echo $1 | sed 's/ /+/g')"
-links https://duckduckgo.com/?t=ftsa&q="${searchquery}"
-else
-	links https://lite.duckduckgo.com/lite
-fi
-}
+
 
 searchpkg() {
 	unbuffer nala search "$@"  | less -R
@@ -60,19 +54,20 @@ picktheme() {
 }
 quotes(){
 printf "\e[0;2;3m"
-cat $(ls $HOME/.scripts/quotes/* $HOME/.scripts/enlightenment/* | shuf | head -1)
+cat $(ls $HOME/.scripts/quotes/* | shuf | head -1)
 printf "\e[0m"
 }
 
 o() {
 if [ "$1" ]
 then
-	( xdg-open "$1" && ( echo "$1" >> ~/.xdg_open_history ) ) > /dev/null
+	sel_file="$(realpath "$1")"
+	xdg-open "$sel_file" && ( echo "$sel_file" >> ~/.xdg_open_history )
 else
-	sel_file="$(sort_cd_history ~/.xdg_open_history | fzf)"
-	[ "$sel_file" ] && ( xdg-open "$sel_file" && ( echo "${sel_file}" >> ~/.xdg_open_history ) ) > /dev/null
-	unset sel_file
+	sel_file="$(sort_cd_history -f ~/.xdg_open_history | fzf)"
+	[ "$sel_file" ] &&  xdg-open "$sel_file" && ( echo "${sel_file}" >> ~/.xdg_open_history )
 fi
+unset sel_file
 }
 
 #  NOTE : These functions are here for extra `cd` functionality in the interactive bash shell
@@ -90,7 +85,7 @@ j_n() {
 }
 
 j() {
-	new_dir="$(sort_cd_history ~/.cd_history | fzf --height=10% --tac)"
+	new_dir="$(sort_cd_history ~/.cd_history -d | fzf --height=10% --tac)"
 	if [ "${new_dir}" ] && [ "$new_dir" != "$(pwd)" ]
 	then
 	old_dir="$(pwd)"
@@ -117,7 +112,6 @@ h(){
 	fi
 }
 
-shopt -s autocd
 cd() {
 new_dir=""
 ARG_STOP=0
@@ -150,23 +144,24 @@ alias activate='source $HOME/venv/bin/activate'
 alias thingstodo="vi ~/.peronal/thingstodo.md"
 alias pycalc='python -ic "from numpy import sin , cos , tan , e , pi , log"'
 alias sxiv='sxiv -ab'
+alias lf='lfrun'
 alias feh='feh -B black --scale-down --keep-zoom-vp'
 alias rm='trash'
 alias l="pickup -l"
 alias less='less -RM'
 alias tt="cat ~/Documents/endsem_schedule.txt"
-alias ..='cd .. && echo "$(pwd)" >> ~/.cd_history'
+#alias ..='cd .. && echo "$(pwd)" >> ~/.cd_history'
 alias bat='batcat'
 alias python='python3'
 alias ls='ls --color=auto'
 #alias cd='old_dir="$(pwd)" && cd'
 alias pd='find $HOME -type d | fzf '
 alias pf='find $HOME ! -type d | fzf '
-alias subplay='mpv --no-video  --player-operation-mode=pseudo-gui -fs'
+alias subplay='mpv --no-video  --player-operation-mode=pseudo-gui -fs --sub-pos=55  --no-resume-playback'
 #alias sudo='sudo '
 #alias apt='nala'
 alias cal='ncal'
-alias ll='ls -lh'
+alias ll='ls -1h'
 alias la='ls -lAh'
 alias lt='ll -t'
 alias schedule='vi $HOME/.scripts/schedule/schedule.md'
@@ -179,6 +174,8 @@ alias :h='info bash'
 alias zathura='zathura --mode fullscreen'
 alias infread='nano -0 -i -x -t /tmp/nano_temp && rm /tmp/nano_temp'
 alias c=cd
+alias m="man -k . | fzf | awk '{print \$1}' | xargs man"
+alias wtr=" curl https://wttr.in"
 #alias sudo='doas --'
 #
 #####################################
@@ -198,4 +195,3 @@ EDITOR="nvim"
 source $HOME/venv/bin/activate
 #quotes
 #cat $HOME/.cache/wal/sequences
-#. "$HOME/.cargo/env"

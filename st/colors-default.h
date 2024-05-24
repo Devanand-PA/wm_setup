@@ -29,4 +29,4 @@ static const char *colorname[] = {
 };
 
 /* bg opacity */
-float alpha = 0.9;
+float alpha = 0.8;

@@ -10,19 +10,26 @@ if sys.argv :
         if sys.argv[i][0] == "-" :
             ARGS.append(sys.argv[i])
         else :
-            ARG_FILE = sys.argv[i]
-with open(os.path.expanduser(ARG_FILE)) as FILE:
-    cd_history = list(FILE.read().split('\n'))
+            if sys.stdin.isatty():
+                ARG_FILE = sys.argv[i]
+                with open(os.path.expanduser(ARG_FILE)) as FILE:
+                    cd_history = list(FILE.read().split('\n'))
+            else :
+                cd_history = list(sys.stdin.read().split("\n"))
 
 def filterFunction(args):
     def filterDirectories(dir) :
         return (dir not in excluded_paths) and (os.path.isdir(dir))
     def filterFiles(dir) :
         return (dir not in excluded_paths) and (os.path.isfile(dir))
+    def filterText(dir) :
+        return True
     if "-d" in args :
         return filterDirectories
-    else :
+    elif "-f" in args :
         return filterFiles
+    else :
+        return filterText
 log = ""
 FILTER = filterFunction(ARGS) 
 

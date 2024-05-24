@@ -36,6 +36,7 @@ static const Rule rules[] = {
 	 */
 	/* class      	instance    	title       tags mask     isfloating  isterminal	noswallow monitor */
 	//{ "Gimp",     NULL,       	NULL,	0,      	1,		0, 		0,		-1 },
+//	{ "Conky",     NULL,       	NULL,	0,      	True,		0, 		0,		-1 },
 //	{ "zice",     	NULL,       	NULL,	0,        	1,		0, 		1,		-1 },
 //	{ "Zutty",     	NULL,       	NULL,	0,		1,		0, 		1,		-1 },
 //	{ "Blender",    NULL,       	NULL,	0,            	0,       	0, 		1,		-1 },
@@ -98,7 +99,7 @@ static const Key keys[] = {
 	{ MODKEY|Mod1Mask,	        XK_b, 				spawn,          {.v = (const char*[]){"bookmarks","output",NULL} } },
 	{ MODKEY|ShiftMask,		XK_s, 				spawn,          {.v = applet_Command } },
 	{ MODKEY,			XK_w, 				spawn,          {.v = (const char*[]){"vscrot",NULL} } },
-	{ MODKEY,			XK_r, 				spawn,          {.v = (const char*[]){"st","-e","pickup","-l",NULL} } },
+	{ MODKEY,			XK_r, 				spawn,          {.v = (const char*[]){"st","-e","pickup","-r",NULL} } },
 	{ MODKEY,	                XK_e, 				spawn,          {.v = (const char*[]){"emoji.sh", NULL} } },
 	{ MODKEY,	                XK_m, 				spawn,          {.v = (const char*[]){"mail",NULL} } },
 	{ MODKEY,	                XK_n, 				spawn,          {.v = (const char*[]){"st","-e","nvim",NULL} } },
