@@ -85,7 +85,7 @@ j_n() {
 }
 
 j() {
-	new_dir="$(sort_cd_history ~/.cd_history -d | fzf --height=10% --tac)"
+	new_dir="$(tail ~/.cd_history | sort_cd_history -d | fzf --height=10% --tac)"
 	if [ "${new_dir}" ] && [ "$new_dir" != "$(pwd)" ]
 	then
 	old_dir="$(pwd)"
