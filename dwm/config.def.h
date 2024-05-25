@@ -92,6 +92,7 @@ static const Key keys[] = {
 	{ MODKEY,                       XK_space,			spawn,          {.v = dmenucmd } },
 	{ MODKEY|ControlMask,           XK_c,				spawn,          SHCMD("xclip -o | xclip -sel clip") },
 	{ MODKEY,	                XK_x, 				spawn,          {.v = (const char*[]){TERM, NULL} } },
+	{ MODKEY,	                XK_v, 				spawn,          {.v = (const char*[]){TERM,"-e","lfrun", NULL} } },
 	{ MODKEY|Mod1Mask,              XK_x, 				spawn,          {.v = (const char*[]){"tabbed","-k","st","-w" , NULL} } },
 	{ MODKEY,			XK_t,				spawn,		SHCMD("st -e vi ~/.peronal/thingstodo.md") },
 	{ MODKEY,	                XK_s, 				spawn,          {.v = searchcmd } },

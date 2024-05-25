@@ -62,10 +62,10 @@ o() {
 if [ "$1" ]
 then
 	sel_file="$(realpath "$1")"
-	xdg-open "$sel_file" && ( echo "$sel_file" >> ~/.xdg_open_history )
+	filsrc "$sel_file" && ( echo "$sel_file" >> ~/.xdg_open_history )
 else
 	sel_file="$(sort_cd_history -f ~/.xdg_open_history | fzf)"
-	[ "$sel_file" ] &&  xdg-open "$sel_file" && ( echo "${sel_file}" >> ~/.xdg_open_history )
+	[ "$sel_file" ] &&  filsrc "$sel_file" && ( echo "${sel_file}" >> ~/.xdg_open_history )
 fi
 unset sel_file
 }
@@ -157,7 +157,7 @@ alias ls='ls --color=auto'
 #alias cd='old_dir="$(pwd)" && cd'
 alias pd='find $HOME -type d | fzf '
 alias pf='find $HOME ! -type d | fzf '
-alias subplay='mpv --no-video  --player-operation-mode=pseudo-gui -fs --sub-pos=55  --no-resume-playback'
+alias subplay='mpv --no-video  --player-operation-mode=pseudo-gui -fs --sub-pos=55  --no-resume-playback --cover-art-file=/usr/share/wallpapers/wal --vid=1'
 #alias sudo='sudo '
 #alias apt='nala'
 alias cal='ncal'
