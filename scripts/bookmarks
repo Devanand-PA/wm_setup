@@ -1,0 +1,45 @@
+#!/bin/python3
+import subprocess
+import os
+import sys
+book_File = os.path.expanduser("~/.scripts/bookmarks/bookmarks")
+comm_File = os.path.expanduser("~/.scripts/bookmarks/comments")
+
+def save_bookmark() :
+    if subprocess.run("xclip -o",shell=True).returncode == 1 :
+        BOOKMARK = subprocess.check_output(": | dmenu -p 'Bookmark :'",shell=True).decode("utf-8")
+        BOOKMARK = BOOKMARK.replace("\n","")
+        COMMENT = subprocess.check_output(": | dmenu -p 'Comment :'",shell=True).decode("utf-8")
+    else :
+        BOOKMARK = subprocess.check_output("xclip -o",shell=True).decode("utf-8")
+        COMMENT = subprocess.check_output(": | dmenu -p 'Comment :'",shell=True).decode("utf-8")
+    if BOOKMARK and COMMENT :
+        with open(book_File) as FILE :
+            bookmarks = list(FILE.read().split('\n'))
+
+        if not BOOKMARK in bookmarks :
+            with open(book_File,'a') as FILE:
+                FILE.write(BOOKMARK+"\n")
+            with open(comm_File,'a') as FILE:
+                FILE.write(COMMENT)
+
+def select_bookmark() :
+    with open(book_File) as FILE :
+        bookmarks = FILE.read()
+        bookmarks_list = list(bookmarks.split('\n'))
+        bookmarks_list.pop(-1)
+    with open(comm_File) as FILE :
+        comments = FILE.read()
+        comments_list = list(comments.split('\n'))
+        comments_list.pop(-1)
+    DMENU_INPUT = f''
+    for i in range(len(bookmarks_list)) :
+        DMENU_INPUT+= f'{i} {bookmarks_list[i]} {("#"+comments_list[i]).rjust(50)}\n'
+    selected = int(subprocess.check_output("dmenu -i -l 30 -p 'Select Bookmark' | awk '{print $1}'",shell=True,input=bytes(DMENU_INPUT,'utf-8')))
+    BOOKMARK=bookmarks_list[selected]
+    subprocess.run(["xclip","-sel","clip"],input=bytes(BOOKMARK,'utf-8'))
+ARG = sys.argv[1]
+if ARG == "save" :
+    save_bookmark()
+elif ARG == "output" :
+    select_bookmark()
