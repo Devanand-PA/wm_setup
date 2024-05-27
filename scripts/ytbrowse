@@ -21,8 +21,8 @@ for i in ARGS :
         elif i[1] == "d" :
             dmode  += i
         elif i[1] == "m" :
-            menu+=list(i.split("="))
-            menu = menu[1]
+            menu1 = list(i.split("="))
+            menu  = menu1[1]
     else :
         searchQuery+= str(i)
 
