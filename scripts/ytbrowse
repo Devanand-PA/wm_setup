@@ -1,79 +1,86 @@
-#!/bin/bash
-searchquery=""
-FORMAT=""
-dmode=""
+#!/bin/python3
+import sys
+import shutil
+import subprocess
+searchQuery = ""
+FORMAT = ""
+dmode = ""
 A="init"
 menu=""
 R=""
+userAgent= "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.61 Safari/537.36"
 # Handling dmode and FORMAT
-for i in "$@"
-do
-FORMAT+="$(echo "$i" | grep "^-F=" | awk -F "=" '{print $2}')"
-done
+ARGS = sys.argv[1:]
+for i in ARGS :
+    if i[0] == "-" :
+        if i[1] =="F" :
+            FORMAT = list(i.split("="))
+            FORMAT = FORMAT[1]
+        elif i[1] == "R" :
+            R+= i
+        elif i[1] == "d" :
+            dmode  += i
+        elif i[1] == "m" :
+            menu+=list(i.split("="))
+            menu = menu[1]
+    else :
+        searchQuery+= str(i)
 
-for i in "$@"
-do
-	R+="$(echo "$i" | grep "^-R" )"
-done
+#####################################################
 
-for i in "$@"
-do
-dmode+="$(echo "$i" | grep "^-d$")"
-done
+if searchQuery == "" :
+    searchQuery = subprocess.check_output("dmenu",input=b'')
+    searchQuery = searchQuery.decode("utf-8").replace("\n","")
+if menu == "" :
+    menu = "dmenu -l 30"
 
-for i in "$@"
-do
-menu+="$(echo "$i" | grep "^-m=" | awk -F "=" '{print $2}')"
-done
+TERM_SIZE = shutil.get_terminal_size().columns
+curledQuery = b''
+if searchQuery != "" :
+    INV_INSTANCE="iv.melmac.space"
+    print("Loading...")
+    pages_to_load = 3
+    for i in range(pages_to_load) :
+        Page= [ "curl", "-A",userAgent ,
+            f"https://{INV_INSTANCE}/search?q={searchQuery.replace(' ','+')}&type=video&page={i}" ]
+        rawPage = subprocess.check_output(Page)
+        curledQuery += rawPage+b'\n'
+    titleCommand = '''
+    grep 'p dir="auto"' | grep -v '&nbsp' | awk -F '>' '{print $3}' | sed 's/<\/p//g'
+    '''
+    channelCommand = '''
+        grep channel-name |   awk -F ">" '{print $2}' | awk -F "&nbsp" '{print $1}' | sed 's/<\/p//g'
+        '''
+    urlCommand = '''
+    grep youtube | grep watch | awk -F '"' '{print $4}'
+        '''
+    titles = list(subprocess.check_output(titleCommand,shell=True,input=curledQuery).decode("utf-8").split("\n"))
+    titles.remove('')
+    channels = list(subprocess.check_output(channelCommand,shell=True,input=curledQuery).decode("utf-8").split("\n"))
+    urls = list(subprocess.check_output(urlCommand,shell=True,input=curledQuery).decode("utf-8").split("\n"))
+    fulllink = ""
+    for i in range(len(titles)) :
+        fulllink += f"{titles[i].ljust(int(TERM_SIZE/2))} {channels[i].ljust(int(TERM_SIZE/2))} {urls[i]}\n"
+    if dmode :
+        URLLINK=subprocess.check_output(menu+" | awk '{print $NF}'",shell=True,input=bytes(fulllink,"utf-8")).decode("utf-8").replace("\n","")
+        if FORMAT :
+            FORMAT="--format="+FORMAT
+            dlCommand = f"yt-dlp {FORMAT} -o $HOME/Videos/yt-dlp/%(uploader)s/%(playlist)s/%(playlist_index)s - %(title)s.%(ext)s {URLLINK}" 
+        else :
+            dlCommand = f"yt-dlp {FORMAT} -o $HOME/Videos/yt-dlp/%(uploader)s/%(playlist)s/%(playlist_index)s - %(title)s.%(ext)s {URLLINK}" 
+        subprocess.run(dlCommand,shell=True)
+    else :
+        while A != "" :
+            URLLINK=subprocess.check_output(menu+" | awk '{print $NF}'",shell=True,input=bytes(fulllink,"utf-8")).decode("utf-8").replace("\n","")
+            if URLLINK == "" :
+                break
 
-for i in "$@"
-do
-	[ "$(echo "$i" | grep -v "^-" )"  ] && searchquery="$searchquery $i"
-done
-####################################################
-
-[ -z "$searchquery" ] && searchquery="$(:|dmenu -p "Searchquery" )"
-[ -z "$menu" ] && menu="dmenu -l 30"
-#[ "$TERM" == "dumb" ] || menu="fzf -m"
-
-if [ "$searchquery" ]
-then
-#############################
-echo "Loading..."
-curl -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.61 Safari/537.36" "https://yewtu.be/search?q=$(echo "$searchquery" | sed 's/\ /+/g')&type=video" > /tmp/searchquery 2>/dev/null
-curl -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.61 Safari/537.36" "https://yewtu.be/search?q=$(echo "$searchquery" | sed 's/\ /+/g')&type=video&page=2" >> /tmp/searchquery 2>/dev/null
-curl -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.61 Safari/537.36" "https://yewtu.be/search?q=$(echo "$searchquery" | sed 's/\ /+/g')&type=video&page=3" >> /tmp/searchquery 2>/dev/null
-grep "p dir=\"auto\"" /tmp/searchquery | grep -v "&nbsp" | awk -F ">" '{print $3}' | sed 's/<\/p//g' | sed 's/\ /_/g' > /tmp/searchtitle
-grep channel-name /tmp/searchquery |   awk -F ">" '{print $2}' | awk -F "&nbsp" '{print $1}' | sed 's/<\/p//g' | sed 's/\ /_/g' > /tmp/channelname
-grep youtube /tmp/searchquery | grep watch | awk -F "\"" '{print $4}'  > /tmp/searchurl
-if [ $dmode ]
-then
-	URLLINK="$(paste /tmp/searchtitle /tmp/channelname /tmp/searchurl | column -t | uniq |  $menu | awk '{print $NF}')"
-	if [ $FORMAT ]
-	then
-	FORMAT="--format=$FORMAT"
-   	yt-dlp "${FORMAT}" -o "$HOME/Videos/yt-dlp/%(uploader)s/%(playlist)s/%(playlist_index)s - %(title)s.%(ext)s" $URLLINK
-	else
-   	yt-dlp  -o "$HOME/Videos/yt-dlp/%(uploader)s/%(playlist)s/%(playlist_index)s - %(title)s.%(ext)s" $URLLINK
-	fi
-else
-	while [ "$A" != "" ]
-	do
-	URLLINK="$(paste /tmp/searchtitle /tmp/channelname /tmp/searchurl | column -t | uniq |  $menu | awk '{print $NF}')"
-	[ "$URLLINK" ] || break
-	if [ $FORMAT ]
-	then
-	FORMAT="--ytdl-format=$FORMAT"
-	mpv --really-quiet $URLLINK ${FORMAT} --player-operation-mode=pseudo-gui
-	else
-	mpv --really-quiet $URLLINK --player-operation-mode=pseudo-gui 
-	fi
-	A="$R"
-	done
-	
-fi
-############################
-
-else
-	echo "Sorry no searchquery entered"
-fi
+            if FORMAT :
+                FORMAT="--format="+FORMAT
+                playCommand= f"mpv --really-quiet {URLLINK} {FORMAT} --player-operation-mode=pseudo-gui"
+            else :
+                playCommand= f"mpv --really-quiet {URLLINK} --player-operation-mode=pseudo-gui"
+            subprocess.run(playCommand,shell=True)
+            A=R
+else :
+    print("Sorry no searchquery entered")
