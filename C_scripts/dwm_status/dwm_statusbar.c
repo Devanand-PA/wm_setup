@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <time.h>
-#include <math.h>
 #include <string.h>
 #include <X11/Xlib.h>
 #include <unistd.h>
@@ -48,7 +47,7 @@ static const char *BAT_ARRAY[] = {"🟥","🟥","🟧","🟧","🟨","🟨","�
 //This thing overwrites bat_10 if you don't give it atleast twice the memory because those coloured blocks are ""
 char bat_icon[50] = "[";
 
-int bat_10 = (int)ceil((battery_percentage-5)/10.0) ;
+int bat_10 = ((battery_percentage+5)/10.0) ;
 //int bat_10 = 8;
 
 //printf("bat_10 is :");
