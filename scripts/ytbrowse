@@ -1,6 +1,5 @@
 #!/bin/python3
 import sys
-import shutil
 import subprocess
 searchQuery = ""
 FORMAT = ""
@@ -34,7 +33,6 @@ if searchQuery == "" :
 if menu == "" :
     menu = "dmenu -l 30"
 
-TERM_SIZE = shutil.get_terminal_size().columns
 curledQuery = b''
 if searchQuery != "" :
     INV_INSTANCE="iv.melmac.space"
@@ -60,7 +58,7 @@ if searchQuery != "" :
     urls = list(subprocess.check_output(urlCommand,shell=True,input=curledQuery).decode("utf-8").split("\n"))
     fulllink = ""
     for i in range(len(titles)) :
-        fulllink += f"{titles[i].ljust(int(TERM_SIZE/2))} {channels[i].ljust(int(TERM_SIZE/2))} {urls[i]}\n"
+        fulllink += f"{titles[i].ljust(int(150))} {channels[i].ljust(int(50))} {urls[i]}\n"
     if dmode :
         URLLINK=subprocess.check_output(menu+" | awk '{print $NF}'",shell=True,input=bytes(fulllink,"utf-8")).decode("utf-8").replace("\n","")
         if FORMAT :
