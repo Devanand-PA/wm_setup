@@ -55,7 +55,7 @@ int bat_10 = ((battery_percentage+5)/10.0) ;
 for(int i=0;i<bat_10;++i){
 	//printf("The Value of i is:%d\n",i);
 	//printf("bat_10 is %d\n",bat_10);
-	sprintf(bat_icon,"%s%s",bat_icon,BAT_ARRAY[bat_10-1]);
+	sprintf(bat_icon,"%s%s",bat_icon,BAT_ARRAY[i]);
 }
 //printf("Done with battery blocks\n");
 //printf("Battery Blocks are %s\n",bat_icon);
