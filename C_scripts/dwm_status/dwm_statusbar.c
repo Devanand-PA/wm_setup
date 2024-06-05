@@ -69,7 +69,7 @@ for(int i=0;i<(10-bat_10);++i)
 //printf("Battery Blocks are %s\n",bat_icon);
 sprintf(bat_icon,"%s]", bat_icon);
 if (strcmp(charging_status, "Discharging") == 0) {
-	sprintf(bat_icon,"%s⬇", bat_icon);
+	sprintf(bat_icon,"%s⏬", bat_icon);
 }
 else {
 	sprintf(bat_icon,"%s⚡", bat_icon);

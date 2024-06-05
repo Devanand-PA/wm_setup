@@ -3,7 +3,10 @@
 #include "movestack.c"
 
 /* appearance */
-static const char *fonts[]          = { "Liberation Mono:size=10:style=Bold", "Noto Color Emoji:size=10" };
+static const char *fonts[]          = { 
+	"Liberation Mono:size=10:style=Bold",
+//	"JetBrains Mono Nerd Font:size=11",
+	"Noto Color Emoji:size=8" };
 static const unsigned int borderpx  = 1;        /* border pixel of windows */
 static const unsigned int snap      = 1;       /* snap pixel */
 static const int swallowfloating    = 0;        /* 1 means swallow floating windows by default */
