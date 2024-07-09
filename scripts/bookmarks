@@ -34,7 +34,10 @@ def select_bookmark() :
         comments_list.pop(-1)
     DMENU_INPUT = f''
     for i in range(len(bookmarks_list)) :
-        DMENU_INPUT+= f'{i} {bookmarks_list[i]} {("#"+comments_list[i]).rjust(50)}\n'
+        if len(bookmarks_list[i]) > 100 :
+            DMENU_INPUT+= f'{i} {bookmarks_list[i][:100]+"..."} {("#"+comments_list[i]).rjust(50)}\n'
+        else :
+            DMENU_INPUT+= f'{i} {bookmarks_list[i]} {("#"+comments_list[i]).rjust(50)}\n'
     selected = int(subprocess.check_output("dmenu -i -l 30 -p 'Select Bookmark' | awk '{print $1}'",shell=True,input=bytes(DMENU_INPUT,'utf-8')))
     BOOKMARK=bookmarks_list[selected]
     subprocess.run(["xclip","-sel","clip"],input=bytes(BOOKMARK,'utf-8'))
