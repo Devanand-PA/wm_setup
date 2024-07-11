@@ -122,6 +122,8 @@ if not DIRS :
 
 LIST_ITEMS = DIRS
 root = tk.Tk()
+root.attributes('-topmost',True)
+root.attributes('-type', 'dialog')
 frame = tk.Frame(root, **frame_style)
 frame.pack(fill=tk.BOTH,expand=True)
 
