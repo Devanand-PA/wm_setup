@@ -62,10 +62,11 @@ o() {
 if [ "$1" ]
 then
 	sel_file="$(realpath "$1")"
-	filsrc "$sel_file" && ( echo "$sel_file" >> ~/.xdg_open_history )
+	filsrc "$sel_file" 
+	[ "$(grep "$sel_file" ~/.xdg_open_history)" ] || ( echo "$sel_file" >> ~/.xdg_open_history )
 else
-	sel_file="$(sort_cd_history -f ~/.xdg_open_history | fzf)"
-	[ "$sel_file" ] &&  filsrc "$sel_file" && ( echo "${sel_file}" >> ~/.xdg_open_history )
+	sel_file="$(cat ~/.xdg_open_history | fzf)"
+	[ "$sel_file" ] &&  filsrc "$sel_file"
 fi
 unset sel_file
 }
@@ -80,17 +81,17 @@ j_n() {
 	old_dir="$(pwd)"
 	command cd "${new_dir}"
 	new_dir="$(pwd)"
-	echo "$new_dir" >> ~/.cd_history
+	[ "$(grep "$new_dir" ~/.cd_history)" ] || echo "$new_dir" >> ~/.cd_history
 	fi
 }
 
 j() {
-	new_dir="$(tail ~/.cd_history -n 1000 | sort_cd_history -d | fzf --height=10% --tac)"
+	new_dir="$(cat ~/.cd_history |  fzf --height=10% --tac)"
 	if [ "${new_dir}" ] && [ "$new_dir" != "$(pwd)" ]
 	then
 	old_dir="$(pwd)"
 	command cd "${new_dir}"
-	echo "$new_dir" >> ~/.cd_history
+	[ "$(grep "$new_dir" ~/.cd_history)" ] || echo "$new_dir" >> ~/.cd_history
 	fi
 }
 
@@ -108,7 +109,7 @@ h(){
 	then
 	old_dir="$(pwd)"
 	command cd "${new_dir}"
-	[ "$new_dir" ] && echo "$new_dir" >> ~/.cd_history
+	[ "$(grep "$new_dir" ~/.cd_history)" ] || echo "$new_dir" >> ~/.cd_history
 	fi
 }
 
@@ -132,7 +133,8 @@ old_dir="$(pwd)"
 [ "$(grep "$old_dir" ~/.cd_history)" ] || echo "$old_dir" >> ~/.cd_history
 [ "$new_dir" ] || new_dir="$HOME"
 new_dir="$(realpath "${new_dir}")"
-command cd "$new_dir" $ARGS && echo "$new_dir" >> ~/.cd_history
+command cd "$new_dir" $ARGS 
+ [ "$(grep "$new_dir" ~/.cd_history)" ] || echo "$new_dir" >> ~/.cd_history
 }
 
 #########################################
@@ -143,8 +145,7 @@ eval "$(dircolors -b)"
 alias activate='source $HOME/venv/bin/activate' 
 alias thingstodo="vi ~/.peronal/thingstodo.md"
 alias pycalc='python -ic "from numpy import sin , cos , tan , e , pi , log"'
-alias sxiv='sxiv -ab'
-alias lf='lfrun'
+alias sxiv='sxiv -a -b'
 alias feh='feh -B black --scale-down --keep-zoom-vp'
 alias rm='trash'
 alias l="pickup -l"
