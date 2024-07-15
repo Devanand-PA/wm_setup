@@ -1,0 +1,5 @@
+#!/bin/sh
+max_brightness=$(cat /sys/class/backlight/*/max_brightness)
+curr_brightness=$(cat /sys/class/backlight/*/brightness)
+percent=$((${curr_brightness}*100/${max_brightness}))
+dunstify -a "ChangeBrightness" -u low -h string:x-dunst-stack-tag:mybrightness -h int:value:${percent} "Brightness: ${curr_brightness}/${max_brightness}"
