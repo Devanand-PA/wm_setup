@@ -83,9 +83,10 @@ static const char *dmenucmd[] = { "dmenu_run", "-m", dmenumon,NULL };
 //Terminal spawned
 static const char *searchcmd[]  = { "st","-c","st-fzf", "-e" , "filsrc","-m=fzf", NULL };
 //
-static const char *window_switcher_rofi[]  = { "rofi", "-show", "window", "-icon-theme", "Papirus" ,"-show-icons",  "-font", "JetBrains Mono  10" , NULL };
+//static const char *window_switcher_rofi[]  = { "rofi", "-show", "window", "-icon-theme", "Papirus" ,"-show-icons",  "-font", "JetBrains Mono  10" , NULL };
+static const char *window_switcher_rofi[]  = { "window_switcher" , NULL };
 static const char *brightnesscmd[][4] = {{"brightnessctl","set","1%-", NULL},{"brightnessctl","set","1+%", NULL}};
-static const char *volumekeys[][8] = {{"amixer","-D","pulse","set","Master","1+","toggle",NULL},{"amixer","-q","sset","'Master'","5%+",NULL},{"amixer","-q","sset","'Master'","5%-",NULL}};
+static const char *volumekeys[][8] = { {"sh","-c","amixer -D pulse set Master 1+ toggle && chvol",NULL},{"sh","-c","amixer -q sset 'Master' 5%+ && chvol",NULL},{"sh","-c","amixer -q sset 'Master' 5%- && chvol",NULL}};
 //static const char *volumekeys[][8] = {{"pactl","set-sink-mute","3","toggle",NULL},{"pactl","set-sink-volume","3","+1%",NULL},{"pactl","set-sink-volume","3","-1%",NULL}};
 static const char *applet_Command[]  = { "st","-f","JetBrains Mono:size=12","-e","applet_selector" ,NULL };
 static const char *screenshot[][3] = {{"screenshot",NULL},{"screenshot","-s",NULL}};
@@ -115,7 +116,7 @@ static const Key keys[] = {
 	{ MODKEY|ShiftMask,	        XK_p, 				spawn,          {.v = (const char*[]){"librewolf",NULL} } },
 	{ MODKEY|ShiftMask,		XK_Tab, 			spawn,          {.v = window_switcher_rofi} },
 	{ MODKEY,	                XK_b, 				spawn,          {.v = (const char*[]){"brave-browser",NULL} } },
-	{ MODKEY,			XK_o, 				spawn,          SHCMD("cat ~/.xdg_open_history | dmenu -l 30 | xargs -I {} filsrc '{}' ") },
+	{ MODKEY,			XK_o, 				spawn,          SHCMD("cat ~/.xdg_open_history | dmenu -l 30 -i | xargs -I {} filsrc '{}' ") },
 	{ 0,		                XF86XK_MonBrightnessDown, 	spawn,		{.v = brightnesscmd[0] } },
 	{ 0,		                XF86XK_MonBrightnessUp, 	spawn,  	{.v = brightnesscmd[1] } },
 	{ 0,		                XF86XK_AudioMute, 		spawn,        	{.v = volumekeys[0] } },
