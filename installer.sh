@@ -33,6 +33,7 @@ pipx install pywal
 mkdir -p $HOME/.local/bin
 mkdir -p $HOME/.scripts/bin/
 mkdir -p $HOME/.config/Tkinter
+cp ./style.json $HOME/.config/Tkinter
 cp scripts/* $HOME/.scripts/bin/
 chmod +x $HOME/.scripts/bin/*
 mkdir ~/Trash
