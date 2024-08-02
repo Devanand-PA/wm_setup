@@ -41,7 +41,7 @@ fclose(file);
     fclose(file);
 
 
-static const char *BAT_ARRAY[] = {"🟥","🟥","🟧","🟧","🟨","🟨","🟩","🟩","🟩","🟩"};
+static const char *BAT_ARRAY[] = {"🟥","🟥","🟧","🟧","🟨","🟨","🟩","🟩","🟦","🟦"};
 //static const char *BAT_ARRAY[] = {"█","█","█","█","█","█","█","█","█","█"};
 
 //This thing overwrites bat_10 if you don't give it atleast twice the memory because those coloured blocks are ""

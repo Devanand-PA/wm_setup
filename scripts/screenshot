@@ -18,7 +18,13 @@ if sys.argv[1:] :
     OPTIONS = sys.argv[1]
     FILENAME = get_input("Enter Screenshot Name :") 
 if FILENAME :
-    FILENAME=os.path.expanduser("~/Pictures/Named_Screenshots/"+FILENAME+".jpg")
+    test=os.path.expanduser("~/Pictures/Named_Screenshots/"+FILENAME)
+    i = 0
+    while os.path.basename(test) in os.listdir(os.path.dirname(test)) :
+        i +=1
+        test = FILENAME+"_"+str(i)
+    FILENAME = test+".jpg"
+
 else :
     FILENAME=os.path.expanduser("~/Pictures/Screenshots/"+DATE+".jpg")
 

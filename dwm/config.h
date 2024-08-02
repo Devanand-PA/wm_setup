@@ -4,14 +4,19 @@
 
 /* appearance */
 static const char *fonts[]          = { 
-	"Liberation Mono:size=10:style=Bold",
+	"Liberation Mono:size=8:style=Bold",
 //	"JetBrains Mono Nerd Font:size=11",
-	"Noto Color Emoji:size=8" };
+	"Noto Color Emoji:size=7" };
 static const unsigned int borderpx  = 1;        /* border pixel of windows */
 static const unsigned int snap      = 1;       /* snap pixel */
 static const int swallowfloating    = 0;        /* 1 means swallow floating windows by default */
 static const int showbar            = 1;        /* 0 means no bar */
 static const int topbar             = 1;        /* 0 means bottom bar */
+static const unsigned int systraypinning = 0;   /* 0: sloppy systray follows selected monitor, >0: pin systray to monitor X */
+static const unsigned int systrayonleft = 0;    /* 0: systray in the right corner, >0: systray on left of status text */
+static const unsigned int systrayspacing = 2;   /* systray spacing */
+static const int systraypinningfailfirst = 1;   /* 1: if pinning fails, display systray on the first monitor, False: display systray on the last monitor*/
+static const int showsystray        = 1;        /* 0 means no systray */
 
 
 #include "colors.h"
@@ -30,7 +35,7 @@ static char *colors[][3] = {
 
 
 /* tagging */
-static const char *tags[] = { "1", "2", "3", "4", "5", "6", "7", "8", "9" };
+static const char *tags[] = { "1", "2", "3", "4", "5", "6", "7", "8", "9","📧" };
 
 static const Rule rules[] = {
 	/* xprop(1):
@@ -50,6 +55,7 @@ static const Rule rules[] = {
 	{ "st",     NULL,       	NULL,	0,            	0,        	1, 		0,		-1 },
 //	{ "Alacritty",  NULL,		NULL, 	0,		0,		1,	 	0,		-1 },
 //	{ "Firefox",  	NULL,       	NULL,	1 << 8,	       	0,          	0, 		0,		-1 },
+	{ "thunderbird",  	NULL,       	NULL,	1 << 9,	       	0,          	0, 		0,		-1 },
 //	{ "thunderbird",NULL,   	NULL,	1 << 8,	       	0,          	0, 		0,		-1 },
 };
 
@@ -85,8 +91,8 @@ static const char *searchcmd[]  = { "st","-c","st-fzf", "-e" , "filsrc","-m=fzf"
 //
 static const char *window_switcher_rofi[]  = { "rofi", "-show", "window", "-icon-theme", "Papirus" ,"-show-icons",  "-font", "JetBrains Mono  10" , NULL };
 // static const char *window_switcher_rofi[]  = { "window_switcher" , NULL };
-static const char *brightnesscmd[][4] = {{"sh","-c","brightnessctl set 1%- && chbright", NULL},{"sh","-c","brightnessctl set 1+% && chbright", NULL}};
-static const char *volumekeys[][8] = { {"sh","-c","amixer -D pulse set Master 1+ toggle && chvol",NULL},{"sh","-c","amixer -q sset 'Master' 2%+ && chvol",NULL},{"sh","-c","amixer -q sset 'Master' 2%- && chvol",NULL}};
+static const char *brightnesscmd[][4] = {{"sh","-c","brightnessctl set 50- && chbright", NULL},{"sh","-c","brightnessctl set 50+ && chbright", NULL}};
+static const char *volumekeys[][8] = { {"sh","-c","amixer -D pulse set Master 1+ toggle && chvol",NULL},{"sh","-c","amixer -D pulse set Master 1+ unmute && amixer -q sset 'Master' 2%+ && chvol",NULL},{"sh","-c","amixer -D pulse set Master 1+ unmute && amixer -q sset 'Master' 2%- && chvol",NULL}};
 //static const char *volumekeys[][8] = {{"pactl","set-sink-mute","3","toggle",NULL},{"pactl","set-sink-volume","3","+1%",NULL},{"pactl","set-sink-volume","3","-1%",NULL}};
 static const char *applet_Command[]  = { "st","-f","JetBrains Mono:size=12","-e","applet_selector" ,NULL };
 static const char *screenshot[][3] = {{"screenshot",NULL},{"screenshot","-s",NULL}};
@@ -100,15 +106,17 @@ static const Key keys[] = {
 	{ MODKEY,	                XK_x, 				spawn,          {.v = (const char*[]){TERM, NULL} } },
 	{ MODKEY,	                XK_v, 				spawn,          {.v = (const char*[]){"pcmanfm", NULL} } },
 	{ MODKEY|Mod1Mask,              XK_x, 				spawn,          {.v = (const char*[]){"tabbed","-k","st","-w" , NULL} } },
-	{ MODKEY,			XK_t,				spawn,		SHCMD("st -e vi ~/.peronal/thingstodo.md") },
+	{ MODKEY,			XK_t,				spawn,		{.v = (const char*[]){"st","-e","calcurse" , NULL} } },
 	{ MODKEY,	                XK_s, 				spawn,          {.v = searchcmd } },
 	{ MODKEY|Mod1Mask,	        XK_s, 				spawn,          {.v = (const char*[]){"bookmarks","save",NULL} } },
 	{ MODKEY|Mod1Mask,	        XK_b, 				spawn,          {.v = (const char*[]){"bookmarks","output",NULL} } },
 	{ MODKEY|ShiftMask,		XK_s, 				spawn,          {.v = applet_Command } },
-	{ MODKEY,			XK_w, 				spawn,          {.v = (const char*[]){"vscrot",NULL} } },
+	{ MODKEY,			XK_w, 				spawn,          {.v = (const char*[]){"vscrot","I",NULL} } },
 	{ MODKEY,			XK_r, 				spawn,          {.v = (const char*[]){"st","-e","pickup","-r",NULL} } },
 	{ MODKEY,	                XK_e, 				spawn,          {.v = (const char*[]){"emoji.sh", NULL} } },
-	{ MODKEY,	                XK_m, 				spawn,          {.v = (const char*[]){"firefox","-P","Mail",NULL} } },
+	{ MODKEY|ControlMask,	        XK_m, 				spawn,          {.v = (const char*[]){"firefox","-P","Mail",NULL} } },
+	{ MODKEY,	                XK_m, 				spawn,          {.v = (const char*[]){"thunderbird",NULL} } },
+	{ MODKEY|Mod1Mask,	        XK_m, 				spawn,          {.v = (const char*[]){"firefox","-P","Manga",NULL} } },
 	{ MODKEY,	                XK_n, 				spawn,          {.v = (const char*[]){"st","-e","nvim",NULL} } },
 	{ MODKEY|Mod1Mask,		XK_r,   			quit,           {1} }, 
 //	{ MODKEY,			XK_r,   			quit,           {1} }, 
@@ -117,6 +125,7 @@ static const Key keys[] = {
 	{ MODKEY|ShiftMask,		XK_Tab, 			spawn,          {.v = window_switcher_rofi} },
 	{ MODKEY,	                XK_b, 				spawn,          {.v = (const char*[]){"brave-browser",NULL} } },
 	{ MODKEY,			XK_o, 				spawn,          SHCMD("cat ~/.xdg_open_history | dmenu -l 30 -i | xargs -I {} filsrc '{}' ") },
+	{ MODKEY|ShiftMask,		XK_o, 				spawn,          {.v = (const char*[]){"obs","--minimize-to-tray",NULL} } },
 	{ 0,		                XF86XK_MonBrightnessDown, 	spawn,		{.v = brightnesscmd[0] } },
 	{ 0,		                XF86XK_MonBrightnessUp, 	spawn,  	{.v = brightnesscmd[1] } },
 	{ 0,		                XF86XK_AudioMute, 		spawn,        	{.v = volumekeys[0] } },
@@ -157,6 +166,7 @@ static const Key keys[] = {
 	TAGKEYS(                        XK_7,      			          	6)
 	TAGKEYS(                        XK_8,      			          	7)
 	TAGKEYS(                        XK_9,      			           	8)
+	TAGKEYS(                        XK_F1,      			           	9)
 	{ MODKEY|Mod1Mask,             	XK_q,      			quit,           {0} },
 };
 
