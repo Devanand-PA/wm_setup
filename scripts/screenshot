@@ -19,6 +19,9 @@ if sys.argv[1:] :
     FILENAME = get_input("Enter Screenshot Name :") 
 if FILENAME :
     test=os.path.expanduser("~/Pictures/Named_Screenshots/"+FILENAME)
+    DIRNAME = os.path.dirname(test)
+    if not(os.path.isdir(DIRNAME)) :
+        subprocess.run(["mkdir","-p",DIRNAME])
     i = 0
     while os.path.basename(test) in os.listdir(os.path.dirname(test)) :
         i +=1
@@ -28,10 +31,6 @@ if FILENAME :
 else :
     FILENAME=os.path.expanduser("~/Pictures/Screenshots/"+DATE+".jpg")
 
-if FILENAME :
-    DIRNAME = os.path.dirname(FILENAME)
-    if not(os.path.isdir(DIRNAME)) :
-        subprocess.run(["mkdir","-p",DIRNAME])
 
 
 if OPTIONS :
