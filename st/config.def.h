@@ -5,10 +5,10 @@
  *
  * font: see http://freedesktop.org/software/fontconfig/fontconfig-user.html
  */
-static char *font = "JetBrains Mono:pixelsize=12:antialias=true:autohint=true";
+static char *font = "JetBrains Mono:pixelsize=14:antialias=true:autohint=true";
 static char *font2[] = {
-	"JetBrains Mono Nerd Font:pixelsize=12:antialias=true:autohint=true",
-	"Noto Color Emoji:pixelsize=12",
+	"JetBrains Mono Nerd Font:pixelsize=14:antialias=true:autohint=true",
+	"Noto Color Emoji:pixelsize=14",
 /*	"Inconsolata for Powerline:pixelsize=12:antialias=true:autohint=true", */
 /*	"Hack Nerd Font Mono:pixelsize=11:antialias=true:autohint=true", */
 	"HanaMin A"

@@ -4,9 +4,9 @@
 
 /* appearance */
 static const char *fonts[]          = { 
-	"Liberation Mono:size=8:style=Bold",
+	"Liberation Mono:size=9:style=Bold",
 //	"JetBrains Mono Nerd Font:size=11",
-	"Noto Color Emoji:size=7" };
+	"Noto Color Emoji:size=8" };
 static const unsigned int borderpx  = 1;        /* border pixel of windows */
 static const unsigned int snap      = 1;       /* snap pixel */
 static const int swallowfloating    = 0;        /* 1 means swallow floating windows by default */
@@ -65,11 +65,15 @@ static const int nmaster     = 1;    /* number of clients in master area */
 static const int resizehints = 1;    /* 1 means respect size hints in tiled resizals */
 static const int lockfullscreen = 1; /* 1 will force focus on the fullscreen window */
 
+#define FORCE_VSPLIT 1
+#include "nrowgrid.c"
+
 static const Layout layouts[] = {
 	/* symbol     arrange function */
 	{ "[]=",      tile },    /* first entry is default */
 	{ "><>",      NULL },    /* no layout function means floating behavior */
 	{ "[M]",      monocle },
+	{ "###",      nrowgrid },
 };
 
 /* key definitions */
@@ -104,6 +108,7 @@ static const Key keys[] = {
 	{ MODKEY,                       XK_space,			spawn,          {.v = dmenucmd } },
 	{ MODKEY|ControlMask,           XK_c,				spawn,          SHCMD("xclip -o | xclip -sel clip") },
 	{ MODKEY,	                XK_x, 				spawn,          {.v = (const char*[]){TERM, NULL} } },
+	{ MODKEY|ControlMask,	        XK_x, 				spawn,          {.v = (const char*[]){TERM,"-e","lf", NULL} } },
 	{ MODKEY,	                XK_v, 				spawn,          {.v = (const char*[]){"pcmanfm", NULL} } },
 	{ MODKEY|Mod1Mask,              XK_x, 				spawn,          {.v = (const char*[]){"tabbed","-k","st","-w" , NULL} } },
 	{ MODKEY,			XK_t,				spawn,		{.v = (const char*[]){"st","-e","calcurse" , NULL} } },
@@ -149,6 +154,7 @@ static const Key keys[] = {
 	{ MODKEY|ShiftMask,             XK_j,      			movestack,      {.i = +1 } },
 	{ MODKEY|ShiftMask,             XK_k,      			movestack,      {.i = -1 } },
 	{ MODKEY|ShiftMask,             XK_m,      			setlayout,      {.v = &layouts[2]} },
+	{ MODKEY|ShiftMask,             XK_g,      			setlayout,      {.v = &layouts[3]} },
 //	{ MODKEY|ShiftMask,             XK_f,      			setlayout,      {0} },
 	{ MODKEY|ShiftMask,             XK_space,  			togglefloating, {0} },
 	{ MODKEY,                       XK_0,      			view,           {.ui = ~0 } },
