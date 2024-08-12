@@ -9,6 +9,8 @@ static const char *fonts[]          = {
 	"Noto Color Emoji:size=8" };
 static const unsigned int borderpx  = 1;        /* border pixel of windows */
 static const unsigned int snap      = 1;       /* snap pixel */
+static const unsigned int tabModKey = 0x40;
+static const unsigned int tabCycleKey = 0x17;
 static const int swallowfloating    = 0;        /* 1 means swallow floating windows by default */
 static const int showbar            = 1;        /* 0 means no bar */
 static const int topbar             = 1;        /* 0 means bottom bar */
@@ -35,7 +37,7 @@ static char *colors[][3] = {
 
 
 /* tagging */
-static const char *tags[] = { "1", "2", "3", "4", "5", "6", "7", "8", "9","📧" };
+static const char *tags[] = { "1", "2", "3", "4", "5", "6", "7", "8", "9","📧","⬇" };
 
 static const Rule rules[] = {
 	/* xprop(1):
@@ -93,7 +95,6 @@ static const char *dmenucmd[] = { "dmenu_run", "-m", dmenumon,NULL };
 //Terminal spawned
 static const char *searchcmd[]  = { "st","-c","st-fzf", "-e" , "filsrc","-m=fzf", NULL };
 //
-static const char *window_switcher_rofi[]  = { "rofi", "-show", "window", "-icon-theme", "Papirus" ,"-show-icons",  "-font", "JetBrains Mono  10" , NULL };
 // static const char *window_switcher_rofi[]  = { "window_switcher" , NULL };
 static const char *brightnesscmd[][4] = {{"sh","-c","brightnessctl set 50- && chbright", NULL},{"sh","-c","brightnessctl set 50+ && chbright", NULL}};
 static const char *volumekeys[][8] = { {"sh","-c","amixer -D pulse set Master 1+ toggle && chvol",NULL},{"sh","-c","amixer -D pulse set Master 1+ unmute && amixer -q sset 'Master' 2%+ && chvol",NULL},{"sh","-c","amixer -D pulse set Master 1+ unmute && amixer -q sset 'Master' 2%- && chvol",NULL}};
@@ -124,10 +125,11 @@ static const Key keys[] = {
 	{ MODKEY|Mod1Mask,	        XK_m, 				spawn,          {.v = (const char*[]){"firefox","-P","Manga",NULL} } },
 	{ MODKEY,	                XK_n, 				spawn,          {.v = (const char*[]){"st","-e","nvim",NULL} } },
 	{ MODKEY|Mod1Mask,		XK_r,   			quit,           {1} }, 
+	{ MODKEY,                       XK_o,				winview,        {0} },
+	{ Mod1Mask,                     XK_Tab,				alttab,         {0} },
 //	{ MODKEY,			XK_r,   			quit,           {1} }, 
 	{ MODKEY,	                XK_p, 				spawn,          {.v = (const char*[]){"firefox","--private-window",NULL} } },
 	{ MODKEY|ShiftMask,	        XK_p, 				spawn,          {.v = (const char*[]){"librewolf",NULL} } },
-	{ MODKEY|ShiftMask,		XK_Tab, 			spawn,          {.v = window_switcher_rofi} },
 	{ MODKEY,	                XK_b, 				spawn,          {.v = (const char*[]){"brave-browser",NULL} } },
 	{ MODKEY,			XK_o, 				spawn,          SHCMD("cat ~/.xdg_open_history | dmenu -l 30 -i | xargs -I {} filsrc '{}' ") },
 	{ MODKEY|ShiftMask,		XK_o, 				spawn,          {.v = (const char*[]){"obs","--minimize-to-tray",NULL} } },
@@ -173,6 +175,7 @@ static const Key keys[] = {
 	TAGKEYS(                        XK_8,      			          	7)
 	TAGKEYS(                        XK_9,      			           	8)
 	TAGKEYS(                        XK_F1,      			           	9)
+	TAGKEYS(                        XK_F2,      			           	10)
 	{ MODKEY|Mod1Mask,             	XK_q,      			quit,           {0} },
 };
 
