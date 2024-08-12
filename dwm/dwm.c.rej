@@ -1,10 +1,12 @@
 --- dwm.c
 +++ dwm.c
-@@ -232,6 +235,7 @@ static void updatewmhints(Client *c);
- static void view(const Arg *arg);
- static Client *wintoclient(Window w);
- static Monitor *wintomon(Window w);
-+static void winview(const Arg* arg);
- static int xerror(Display *dpy, XErrorEvent *ee);
- static int xerrordummy(Display *dpy, XErrorEvent *ee);
- static int xerrorstart(Display *dpy, XErrorEvent *ee);
+@@ -564,9 +563,6 @@ configurenotify(XEvent *e)
+ 			drw_resize(drw, sw, bh);
+ 			updatebars();
+ 			for (m = mons; m; m = m->next) {
+-				for (c = m->clients; c; c = c->next)
+-					if (c->isfullscreen)
+-						resizeclient(c, m->mx, m->my, m->mw, m->mh);
+ 				XMoveResizeWindow(dpy, m->barwin, m->wx, m->by, m->ww, bh);
+ 			}
+ 			focus(NULL);
