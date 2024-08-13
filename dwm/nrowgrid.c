@@ -50,3 +50,4 @@ nrowgrid(Monitor *m)
         resize(c, cx, cy, cw - 2 * c->bw, ch - 2 * c->bw, 0);
     }
 }
+

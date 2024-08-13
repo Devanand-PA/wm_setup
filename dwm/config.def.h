@@ -4,13 +4,11 @@
 
 /* appearance */
 static const char *fonts[]          = { 
-	"Liberation Mono:size=9:style=Bold",
+	"Liberation Mono:size=8:style=Bold",
 //	"JetBrains Mono Nerd Font:size=11",
-	"Noto Color Emoji:size=8" };
+	"Noto Color Emoji:size=7" };
 static const unsigned int borderpx  = 1;        /* border pixel of windows */
 static const unsigned int snap      = 1;       /* snap pixel */
-static const unsigned int tabModKey = 0x40;
-static const unsigned int tabCycleKey = 0x17;
 static const int swallowfloating    = 0;        /* 1 means swallow floating windows by default */
 static const int showbar            = 1;        /* 0 means no bar */
 static const int topbar             = 1;        /* 0 means bottom bar */
@@ -37,7 +35,7 @@ static char *colors[][3] = {
 
 
 /* tagging */
-static const char *tags[] = { "1", "2", "3", "4", "5", "6", "7", "8", "9","📧","⬇" };
+static const char *tags[] = { "1", "2", "3", "4", "5", "6", "7", "8", "9","📧" };
 
 static const Rule rules[] = {
 	/* xprop(1):
@@ -65,7 +63,7 @@ static const Rule rules[] = {
 static const float mfact     = 0.5; /* factor of master area size [0.05..0.95] */
 static const int nmaster     = 1;    /* number of clients in master area */
 static const int resizehints = 1;    /* 1 means respect size hints in tiled resizals */
-static const int lockfullscreen = 0; /* 1 will force focus on the fullscreen window */
+static const int lockfullscreen = 1; /* 1 will force focus on the fullscreen window */
 
 #define FORCE_VSPLIT 1
 #include "nrowgrid.c"
@@ -73,9 +71,9 @@ static const int lockfullscreen = 0; /* 1 will force focus on the fullscreen win
 static const Layout layouts[] = {
 	/* symbol     arrange function */
 	{ "[]=",      tile },    /* first entry is default */
-	{ "><>",      NULL },    /* no layout function means floating behavior */
+	{ "☁",      NULL },    /* no layout function means floating behavior */
 	{ "[M]",      monocle },
-	{ "###",      nrowgrid },
+	{ "🪟",      nrowgrid },
 };
 
 /* key definitions */
@@ -95,6 +93,7 @@ static const char *dmenucmd[] = { "dmenu_run", "-m", dmenumon,NULL };
 //Terminal spawned
 static const char *searchcmd[]  = { "st","-c","st-fzf", "-e" , "filsrc","-m=fzf", NULL };
 //
+static const char *window_switcher_rofi[]  = { "rofi", "-show", "window", "-icon-theme", "Papirus" ,"-show-icons",  "-font", "JetBrains Mono  10" , NULL };
 // static const char *window_switcher_rofi[]  = { "window_switcher" , NULL };
 static const char *brightnesscmd[][4] = {{"sh","-c","brightnessctl set 50- && chbright", NULL},{"sh","-c","brightnessctl set 50+ && chbright", NULL}};
 static const char *volumekeys[][8] = { {"sh","-c","amixer -D pulse set Master 1+ toggle && chvol",NULL},{"sh","-c","amixer -D pulse set Master 1+ unmute && amixer -q sset 'Master' 2%+ && chvol",NULL},{"sh","-c","amixer -D pulse set Master 1+ unmute && amixer -q sset 'Master' 2%- && chvol",NULL}};
@@ -109,7 +108,6 @@ static const Key keys[] = {
 	{ MODKEY,                       XK_space,			spawn,          {.v = dmenucmd } },
 	{ MODKEY|ControlMask,           XK_c,				spawn,          SHCMD("xclip -o | xclip -sel clip") },
 	{ MODKEY,	                XK_x, 				spawn,          {.v = (const char*[]){TERM, NULL} } },
-	{ MODKEY|ControlMask,	        XK_x, 				spawn,          {.v = (const char*[]){TERM,"-e","lf", NULL} } },
 	{ MODKEY,	                XK_v, 				spawn,          {.v = (const char*[]){"pcmanfm", NULL} } },
 	{ MODKEY|Mod1Mask,              XK_x, 				spawn,          {.v = (const char*[]){"tabbed","-k","st","-w" , NULL} } },
 	{ MODKEY,			XK_t,				spawn,		{.v = (const char*[]){"st","-e","calcurse" , NULL} } },
@@ -125,11 +123,10 @@ static const Key keys[] = {
 	{ MODKEY|Mod1Mask,	        XK_m, 				spawn,          {.v = (const char*[]){"firefox","-P","Manga",NULL} } },
 	{ MODKEY,	                XK_n, 				spawn,          {.v = (const char*[]){"st","-e","nvim",NULL} } },
 	{ MODKEY|Mod1Mask,		XK_r,   			quit,           {1} }, 
-	{ MODKEY,                       XK_o,				winview,        {0} },
-	{ Mod1Mask,                     XK_Tab,				alttab,         {0} },
 //	{ MODKEY,			XK_r,   			quit,           {1} }, 
 	{ MODKEY,	                XK_p, 				spawn,          {.v = (const char*[]){"firefox","--private-window",NULL} } },
 	{ MODKEY|ShiftMask,	        XK_p, 				spawn,          {.v = (const char*[]){"librewolf",NULL} } },
+	{ MODKEY|ShiftMask,		XK_Tab, 			spawn,          {.v = window_switcher_rofi} },
 	{ MODKEY,	                XK_b, 				spawn,          {.v = (const char*[]){"brave-browser",NULL} } },
 	{ MODKEY,			XK_o, 				spawn,          SHCMD("cat ~/.xdg_open_history | dmenu -l 30 -i | xargs -I {} filsrc '{}' ") },
 	{ MODKEY|ShiftMask,		XK_o, 				spawn,          {.v = (const char*[]){"obs","--minimize-to-tray",NULL} } },
@@ -153,11 +150,10 @@ static const Key keys[] = {
 	{ MODKEY,	                XK_q,      			killclient,     {0} },
 	{ MODKEY|ShiftMask,             XK_t,      			setlayout,      {.v = &layouts[0]} },
 	{ MODKEY|ShiftMask,             XK_f,      			setlayout,      {.v = &layouts[1]} },
-	{ MODKEY,             XK_f,      fullscreen,     {0} },
+	{ MODKEY|ShiftMask,             XK_g,      			setlayout,      {.v = &layouts[3]} },
 	{ MODKEY|ShiftMask,             XK_j,      			movestack,      {.i = +1 } },
 	{ MODKEY|ShiftMask,             XK_k,      			movestack,      {.i = -1 } },
 	{ MODKEY|ShiftMask,             XK_m,      			setlayout,      {.v = &layouts[2]} },
-	{ MODKEY|ShiftMask,             XK_g,      			setlayout,      {.v = &layouts[3]} },
 //	{ MODKEY|ShiftMask,             XK_f,      			setlayout,      {0} },
 	{ MODKEY|ShiftMask,             XK_space,  			togglefloating, {0} },
 	{ MODKEY,                       XK_0,      			view,           {.ui = ~0 } },
@@ -176,7 +172,6 @@ static const Key keys[] = {
 	TAGKEYS(                        XK_8,      			          	7)
 	TAGKEYS(                        XK_9,      			           	8)
 	TAGKEYS(                        XK_F1,      			           	9)
-	TAGKEYS(                        XK_F2,      			           	10)
 	{ MODKEY|Mod1Mask,             	XK_q,      			quit,           {0} },
 };
 
