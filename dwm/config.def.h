@@ -93,7 +93,7 @@ static const char *dmenucmd[] = { "dmenu_run", "-m", dmenumon,NULL };
 //Terminal spawned
 static const char *searchcmd[]  = { "st","-c","st-fzf", "-e" , "filsrc","-m=fzf", NULL };
 //
-static const char *window_switcher_rofi[]  = { "rofi", "-show", "window", "-icon-theme", "Papirus" ,"-show-icons",  "-font", "JetBrains Mono  10" ,"-kb-row-down" ,"Alt+Tab", NULL };
+static const char *window_switcher_rofi[]  = { "rofi", "-show", "window", "-icon-theme", "Papirus" ,"-show-icons",  "-font", "JetBrains Mono  14" ,"-kb-row-down" ,"Alt+Tab", NULL };
 // static const char *window_switcher_rofi[]  = { "window_switcher" , NULL };
 static const char *brightnesscmd[][4] = {{"sh","-c","brightnessctl set 50- && chbright", NULL},{"sh","-c","brightnessctl set 50+ && chbright", NULL}};
 static const char *volumekeys[][8] = { {"sh","-c","amixer -D pulse set Master 1+ toggle && chvol",NULL},{"sh","-c","amixer -D pulse set Master 1+ unmute && amixer -q sset 'Master' 2%+ && chvol",NULL},{"sh","-c","amixer -D pulse set Master 1+ unmute && amixer -q sset 'Master' 2%- && chvol",NULL}};
