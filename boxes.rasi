@@ -68,7 +68,6 @@ listview {
 element {
     border:  0;
     padding:      10px;
-    font:         "Mono 8";
     orientation: vertical;
 }
 element-icon {
@@ -96,7 +95,7 @@ icon-ms-ic2 {
     action: "kb-mode-next";
 }
 icon-ms-ic1,icon-ms-ic2 {
-    size: 16;
+    size: 10;
     vertical-align: 0.8;
     expand:        false;
     border:       0px 0px 5px ;
