@@ -4,9 +4,9 @@
 
 /* appearance */
 static const char *fonts[]          = { 
-	"Liberation Mono:size=8:style=Bold",
+	"JetBrains Mono:size=10:style=Bold",
 //	"JetBrains Mono Nerd Font:size=11",
-	"Noto Color Emoji:size=7" };
+	"Noto Color Emoji:size=9" };
 static const unsigned int borderpx  = 1;        /* border pixel of windows */
 static const unsigned int snap      = 1;       /* snap pixel */
 static const int swallowfloating    = 0;        /* 1 means swallow floating windows by default */
@@ -93,7 +93,7 @@ static const char *dmenucmd[] = { "dmenu_run", "-m", dmenumon,NULL };
 //Terminal spawned
 static const char *searchcmd[]  = { "st","-c","st-fzf", "-e" , "filsrc","-m=fzf", NULL };
 //
-static const char *window_switcher_rofi[]  = { "rofi", "-show", "window", "-icon-theme", "Papirus" ,"-show-icons",  "-font", "JetBrains Mono  10" , NULL };
+static const char *window_switcher_rofi[]  = { "rofi", "-show", "window", "-icon-theme", "Papirus" ,"-show-icons",  "-font", "JetBrains Mono  10" ,"-kb-row-down" ,"Alt+Tab", NULL };
 // static const char *window_switcher_rofi[]  = { "window_switcher" , NULL };
 static const char *brightnesscmd[][4] = {{"sh","-c","brightnessctl set 50- && chbright", NULL},{"sh","-c","brightnessctl set 50+ && chbright", NULL}};
 static const char *volumekeys[][8] = { {"sh","-c","amixer -D pulse set Master 1+ toggle && chvol",NULL},{"sh","-c","amixer -D pulse set Master 1+ unmute && amixer -q sset 'Master' 2%+ && chvol",NULL},{"sh","-c","amixer -D pulse set Master 1+ unmute && amixer -q sset 'Master' 2%- && chvol",NULL}};
@@ -126,7 +126,7 @@ static const Key keys[] = {
 //	{ MODKEY,			XK_r,   			quit,           {1} }, 
 	{ MODKEY,	                XK_p, 				spawn,          {.v = (const char*[]){"firefox","--private-window",NULL} } },
 	{ MODKEY|ShiftMask,	        XK_p, 				spawn,          {.v = (const char*[]){"librewolf",NULL} } },
-	{ MODKEY|ShiftMask,		XK_Tab, 			spawn,          {.v = window_switcher_rofi} },
+	{ Mod1Mask,		XK_Tab, 			spawn,          {.v = window_switcher_rofi} },
 	{ MODKEY,	                XK_b, 				spawn,          {.v = (const char*[]){"brave-browser",NULL} } },
 	{ MODKEY,			XK_o, 				spawn,          SHCMD("cat ~/.xdg_open_history | dmenu -l 30 -i | xargs -I {} filsrc '{}' ") },
 	{ MODKEY|ShiftMask,		XK_o, 				spawn,          {.v = (const char*[]){"obs","--minimize-to-tray",NULL} } },
