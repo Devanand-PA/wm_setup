@@ -4,9 +4,11 @@
 
 /* appearance */
 static const char *fonts[]          = { 
-	"JetBrains Mono:size=10:style=Bold",
+//	"Noto Color Emoji:size=9" ,
+	"Liberation Mono :size=11",
 //	"JetBrains Mono Nerd Font:size=11",
-	"Noto Color Emoji:size=9" };
+	"Noto Color Emoji:size=9" 
+};
 static const unsigned int borderpx  = 1;        /* border pixel of windows */
 static const unsigned int snap      = 1;       /* snap pixel */
 static const int swallowfloating    = 0;        /* 1 means swallow floating windows by default */
@@ -111,8 +113,9 @@ static const Key keys[] = {
 	{ MODKEY,	                XK_v, 				spawn,          {.v = (const char*[]){"pcmanfm", NULL} } },
 	{ MODKEY|Mod1Mask,              XK_x, 				spawn,          {.v = (const char*[]){"tabbed","-k","st","-w" , NULL} } },
 	{ MODKEY,			XK_t,				spawn,		{.v = (const char*[]){"st","-e","calcurse" , NULL} } },
-	{ MODKEY,	                XK_s, 				spawn,          {.v = searchcmd } },
+	{ MODKEY|ControlMask,	        XK_s, 				spawn,          {.v = searchcmd } },
 	{ MODKEY|Mod1Mask,	        XK_s, 				spawn,          {.v = (const char*[]){"bookmarks","save",NULL} } },
+	{ MODKEY,		        XK_s, 				spawn,          {.v = (const char*[]){"subplay",NULL} } },
 	{ MODKEY|Mod1Mask,	        XK_b, 				spawn,          {.v = (const char*[]){"bookmarks","output",NULL} } },
 	{ MODKEY|ShiftMask,		XK_s, 				spawn,          {.v = applet_Command } },
 	{ MODKEY,			XK_w, 				spawn,          {.v = (const char*[]){"vscrot","I",NULL} } },
@@ -124,7 +127,7 @@ static const Key keys[] = {
 	{ MODKEY,	                XK_n, 				spawn,          {.v = (const char*[]){"st","-e","nvim",NULL} } },
 	{ MODKEY|Mod1Mask,		XK_r,   			quit,           {1} }, 
 //	{ MODKEY,			XK_r,   			quit,           {1} }, 
-	{ MODKEY,	                XK_p, 				spawn,          {.v = (const char*[]){"firefox","--private-window",NULL} } },
+	{ MODKEY|ControlMask,	        XK_b, 				spawn,          {.v = (const char*[]){"firefox","--private-window",NULL} } },
 	{ MODKEY|ShiftMask,	        XK_p, 				spawn,          {.v = (const char*[]){"librewolf",NULL} } },
 	{ Mod1Mask,		XK_Tab, 			spawn,          {.v = window_switcher_rofi} },
 	{ MODKEY,	                XK_b, 				spawn,          {.v = (const char*[]){"brave-browser",NULL} } },
@@ -134,6 +137,9 @@ static const Key keys[] = {
 	{ 0,		                XF86XK_MonBrightnessUp, 	spawn,  	{.v = brightnesscmd[1] } },
 	{ 0,		                XF86XK_AudioMute, 		spawn,        	{.v = volumekeys[0] } },
 	{ ShiftMask,	                XF86XK_AudioMute, 		spawn,        	{.v = (const char*[]){"vmscript",NULL} } },
+	{ 0,		                XF86XK_AudioPlay,				spawn,        	{.v = (const char*[]){"playerctl","play-pause",NULL} } },
+	{ 0,		                XF86XK_AudioPrev,				spawn,        	{.v = (const char*[]){"playerctl","previous",NULL} } },
+	{ 0,		                XF86XK_AudioNext,				spawn,        	{.v = (const char*[]){"playerctl","next",NULL} } },
 	{ 0,		                XF86XK_AudioRaiseVolume, 	spawn, 		{.v = volumekeys[1] } },
 	{ 0,		                XF86XK_AudioLowerVolume, 	spawn, 		{.v = volumekeys[2] } },
 	{ 0,				XK_Print,			spawn,		{.v = screenshot[0] } },

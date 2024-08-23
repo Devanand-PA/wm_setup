@@ -77,7 +77,7 @@ else {
 
 //=============================================
 // X11
-sprintf(set_to_bar, "%s |BAT %s[%d%%]",time_buffer,bat_icon,battery_percentage);
+sprintf(set_to_bar, "%s |BAT %s[%d]%%",time_buffer,bat_icon,battery_percentage);
  Display *display = XOpenDisplay(NULL);
     if (display == NULL) {
         fprintf(stderr, "Unable to open display.\n");
