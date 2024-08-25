@@ -37,7 +37,7 @@ static char *colors[][3] = {
 
 
 /* tagging */
-static const char *tags[] = { "1", "2", "3", "4", "5", "6", "7", "8", "9","📧" };
+static const char *tags[] = { "🖥 (1)", "📖 (2)", "🌐 (3)", "⚛ (4)", "🪟 (5)", "🎼 (6)", "🎞 (7)", "🎮 (8)", "⌨ (9)","📧 (F1)" };
 
 static const Rule rules[] = {
 	/* xprop(1):
@@ -54,10 +54,11 @@ static const Rule rules[] = {
 	{ "st-fzf",     NULL,       	NULL,	0,            	0,        	1, 		0,		-1 },
 	{ "imv",	NULL,       	NULL,	0,            	0,        	0, 		1,		-1 },
 	{ "st-applet",	NULL,       	NULL,	0,            	1,        	0, 		0,		-1 },
-	{ "st",     NULL,       	NULL,	0,            	0,        	1, 		0,		-1 },
+	{ "st",		NULL,       	NULL,	0,		0,        	1, 		0,		-1 },
 //	{ "Alacritty",  NULL,		NULL, 	0,		0,		1,	 	0,		-1 },
 //	{ "Firefox",  	NULL,       	NULL,	1 << 8,	       	0,          	0, 		0,		-1 },
-	{ "thunderbird",  	NULL,       	NULL,	1 << 9,	       	0,          	0, 		0,		-1 },
+	{ "thunderbird",NULL,       	NULL,	1 << 9,	       	0,          	0, 		0,		-1 },
+	{ "mpv",  	NULL,       	NULL,	1 << 5,	       	0,          	0, 		0,		-1 },
 //	{ "thunderbird",NULL,   	NULL,	1 << 8,	       	0,          	0, 		0,		-1 },
 };
 
