@@ -17,6 +17,7 @@ label_style = style["label_style"]
 im_height = 1000
 im_width = 1000
 
+
 #=========================================
 
 
@@ -110,7 +111,12 @@ if not ARGS :
     ARGS = [ os.getcwd() ]
 for i in ARGS:
     if os.path.isdir(i):
-        for j in os.listdir(i):
+        if "-t" in ARGS :
+            IMAGE_LIST = subprocess.check_output(['ls','-t',i],text=True)
+            IMAGE_LIST = IMAGE_LIST.split('\n')
+        else :
+            IMAGE_LIST = os.listdir(i)
+    for j in IMAGE_LIST:
             filetype = list(j.split('.'))[-1]
             if filetype == "png" or filetype == "jpg" :
                 DIRS.append(os.path.join(i,j))
