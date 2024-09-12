@@ -1,7 +1,7 @@
 #!/bin/sh
 ARG="$@"
-[ $( echo "$ARG" | grep "U") ] && IMG="$(sel_img $(find $HOME/Pictures/Screenshots -type d))"
+[ $( echo "$ARG" | grep "U") ] && IMG="$(sel_img -t $(find $HOME/Pictures/Screenshots -type d))"
 [ $( echo "$ARG" | grep "N")  ] && IMG="$(sel_img $(find $HOME/Pictures/Named_Screenshots -type d))"
-[ "$IMG" ] || IMG="$(sel_img $(find $HOME/Pictures/*Screenshots -type d))"
+[ "$IMG" ] || IMG="$(sel_img -t $(find $HOME/Pictures/*Screenshots -type d))"
 [ "$IMG" ] && echo "$IMG"
 [ "$IMG" ] && [ $( echo "$ARG" | grep "I") ]  && sxiv -b -s f "$IMG" 
