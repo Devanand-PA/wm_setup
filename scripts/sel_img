@@ -113,10 +113,12 @@ for i in ARGS:
     if os.path.isdir(i):
         if "-t" in ARGS :
             IMAGE_LIST = subprocess.check_output(['ls','-t',i],text=True)
+            print(IMAGE_LIST)
             IMAGE_LIST = IMAGE_LIST.split('\n')
+            print(IMAGE_LIST)
         else :
             IMAGE_LIST = os.listdir(i)
-    for j in IMAGE_LIST:
+        for j in IMAGE_LIST:
             filetype = list(j.split('.'))[-1]
             if filetype == "png" or filetype == "jpg" :
                 DIRS.append(os.path.join(i,j))
