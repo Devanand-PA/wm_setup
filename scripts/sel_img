@@ -14,7 +14,6 @@ frame_style = style["frame_style"]
 listbox_style = style["listbox_style"]
 label_style = style["label_style"]
 #======================================
-
 im_height = 1000
 im_width = 1000
 
@@ -122,8 +121,11 @@ if not DIRS :
 
 LIST_ITEMS = DIRS
 root = tk.Tk()
+scr_width = root.winfo_screenwidth()
+scr_height = root.winfo_screenheight()
 root.attributes('-topmost',True)
 root.attributes('-type', 'dialog')
+root.geometry(str(scr_width-50)+"x"+str(scr_height-50))
 frame = tk.Frame(root, **frame_style)
 frame.pack(fill=tk.BOTH,expand=True)
 

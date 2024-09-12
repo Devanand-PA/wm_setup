@@ -1,7 +1,7 @@
 #!/bin/sh
 Debian_deps="gcc make libxinerama-dev libxft-dev fontconfig fonts-liberation libx11-dev xinit x11-session-utils build-essential fonts-noto-cjk-extra fonts-font-awesome libxcb-xinerama0-dev libxcb1-dev libx11-xcb-dev libx11-xcb-dev bsdmainutils libxcb-res0-dev build-essential make alacritty python3-venv fonts-firacode expect libharfbuzz-dev fonts-jetbrains-mono"
 Arch_deps="libxinerama libxft fontconfig ttf-liberation xorg-xinit curl wget base-devel alacritty ttf-fira-code python3-tk python3-pil python3-pil.imagetk"
-Common_utils="alsa-utils acpi  links nsxiv mpv fzf curl wget htop brightnessctl tk scrot pipx xwallpaper"
+Common_utils="alsa-utils acpi  links nsxiv mpv fzf curl wget htop brightnessctl tk scrot  xwallpaper"
 
 dist=$(lsb_release -i | grep ID | awk -F ':\t' '{print $2}')
 case $dist in
@@ -27,7 +27,8 @@ cd ../C_scripts/dwm_status/
 sudo make install
 cd ../..
 sudo cp ./dwm.desktop /usr/share/xsessions/
-pipx install pywal
+python -m venv ~/venv
+pip install tk
 
 ###[Scripts]########
 mkdir -p $HOME/.local/bin

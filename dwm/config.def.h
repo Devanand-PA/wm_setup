@@ -130,6 +130,7 @@ static const Key keys[] = {
 //	{ MODKEY,			XK_r,   			quit,           {1} }, 
 	{ MODKEY|ControlMask,	        XK_b, 				spawn,          {.v = (const char*[]){"firefox","--private-window",NULL} } },
 	{ MODKEY|ShiftMask,	        XK_p, 				spawn,          {.v = (const char*[]){"librewolf",NULL} } },
+	{ MODKEY,		        XK_p, 				spawn,          {.v = (const char*[]){"random_math_stuff",NULL} } },
 	{ Mod1Mask,		XK_Tab, 			spawn,          {.v = window_switcher_rofi} },
 	{ MODKEY,	                XK_b, 				spawn,          {.v = (const char*[]){"brave-browser",NULL} } },
 	{ MODKEY,			XK_o, 				spawn,          SHCMD("cat ~/.xdg_open_history | dmenu -l 30 -i | xargs -I {} filsrc '{}' ") },
