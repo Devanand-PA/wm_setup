@@ -1,6 +1,8 @@
 #!/bin/sh
 PATH="$HOME/.local/bin:$PATH"
-xcompmgr -n &
+#xcompmgr -n &
+#picom --animations --vsync --animation-stiffness-tag-change 400 --animation-stiffness-in-tag 400 &
+picom --vsync -b
 export bg="$(cat $HOME/.cache/wal/wal)"
 dwm_statusbar_c &
 

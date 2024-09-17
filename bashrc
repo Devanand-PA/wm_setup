@@ -21,26 +21,21 @@ shopt -s xpg_echo
 ###########[ Functions ]#################
 searchquotes(){
  quote_to_search="$@"
- if [ $quote_to_search ]
+ if [ "$quote_to_search" ]
  then
- quote_files="$(grep  ${quote_to_search} $HOME/.scripts/quotes/* | awk -F ':' '{print $1}'| uniq )"
+ quote_files="$(grep  "${quote_to_search}" -i $HOME/.scripts/quotes/* | awk -F ':' '{print $1}'| uniq )"
  else
 	quote_files="$(ls $HOME/.scripts/quotes/*)"
  fi
- (printf "\e[0;3;2m"
- for i in ${quote_files}
- do
-	cat $i ;echo -e "\n\n" 
- done
- printf "\033[0m") | batcat --file-name "quotes"
-
- printf "\e[0m"
+quote_file="$(echo "$quote_files" | awk -F '/' '{print $NF}' | fzf --preview='cat ~/.scripts/quotes/{}' --preview-window=left,90%)"
+[ "$quote_file" ] && cat $HOME/.scripts/quotes/$quote_file
+quote_file=""
 }
 
 
 
 searchpkg() {
-	unbuffer nala search "$@"  | less -R
+	unbuffer apt search "$@"  | less -r
 }
 
 picktheme() {
@@ -150,7 +145,7 @@ alias feh='feh -B black --scale-down --keep-zoom-vp'
 alias rm='trash'
 alias l="pickup -l"
 alias less='less -RM'
-alias tt="cat ~/Documents/endsem_schedule.txt"
+alias tt="cat ~/Documents/Shit/timetable"
 #alias ..='cd .. && echo "$(pwd)" >> ~/.cd_history'
 alias bat='batcat'
 alias python='python3'
@@ -158,7 +153,7 @@ alias ls='ls --color=auto'
 #alias cd='old_dir="$(pwd)" && cd'
 alias pd='find $HOME -type d | fzf '
 alias pf='find $HOME ! -type d | fzf '
-alias subplay='mpv --no-video  --player-operation-mode=pseudo-gui -fs --sub-pos=55  --no-resume-playback --cover-art-file=/usr/share/wallpapers/wal --vid=1'
+#alias subplay='mpv --no-video  --player-operation-mode=pseudo-gui -fs --sub-pos=55  --no-resume-playback --cover-art-file=/usr/share/wallpapers/wal --vid=1'
 #alias sudo='sudo '
 #alias apt='nala'
 alias cal='ncal'
@@ -194,5 +189,5 @@ fi
 set -o vi
 EDITOR="nvim"
 source $HOME/venv/bin/activate
-#quotes
+quotes
 #cat $HOME/.cache/wal/sequences
