@@ -124,11 +124,11 @@ do
 	esac
 done
 ARGS_STOP=0
-old_dir="$(pwd)" 
-[ "$(grep "$old_dir" ~/.cd_history)" ] || echo "$old_dir" >> ~/.cd_history
-[ "$new_dir" ] || new_dir="$HOME"
 new_dir="$(realpath "${new_dir}")"
-command cd "$new_dir" $ARGS 
+[ "$new_dir" ] || new_dir="$HOME"
+[ "$curr_dir" != "$new_dir" ] && old_dir="$(pwd)" 
+[ "$(grep "$old_dir" ~/.cd_history)" ] || echo "$old_dir" >> ~/.cd_history
+[ "$new_dir" != "$old_dir" ] && command cd "$new_dir" $ARGS 
  [ "$(grep "$new_dir" ~/.cd_history)" ] || echo "$new_dir" >> ~/.cd_history
 }
 

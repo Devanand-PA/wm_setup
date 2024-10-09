@@ -1,0 +1,24 @@
+#!/bin/python3
+import os
+import subprocess
+
+def get_input(prompt):
+    # Call dmenu with the prompt
+    dmenu_promt = f"cd ~/Documents/Notes/ && find -type f | dmenu -l 30 -p '{prompt}'"
+    output = subprocess.check_output(dmenu_promt, shell=True, universal_newlines=True)
+    # Return the output without the newline character
+    return output.strip().replace('.xopp','')
+
+FILENAME = get_input("Select Note :") 
+print("FILENAME is",FILENAME)
+if FILENAME :
+    test=os.path.expanduser("~/Documents/Notes/"+FILENAME)
+    DIRNAME = os.path.dirname(test)
+    if not(os.path.isdir(DIRNAME)) :
+        subprocess.run(["mkdir","-p",DIRNAME])
+    i = 0
+    while os.path.basename(test) in os.listdir(os.path.dirname(test)) :
+        i +=1
+        test = FILENAME+"_"+str(i)
+    FILENAME = test+".xopp"
+    subprocess.run(['xournalpp',FILENAME])

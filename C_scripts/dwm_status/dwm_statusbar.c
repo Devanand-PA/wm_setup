@@ -3,7 +3,7 @@
 #include <string.h>
 #include <X11/Xlib.h>
 #include <unistd.h>
-
+#include <stdlib.h>
 //==================================
 time_t rawtime;
 struct tm * timeinfo;
@@ -91,11 +91,19 @@ sprintf(set_to_bar, "%s |BAT %s[%d]%%",time_buffer,bat_icon,battery_percentage);
 
     return 0;
 }
+
+int battery_warning(){
+if (battery_percentage <=15) {
+system("dunstify 'Battery Warning' 'Low Battery' -u critical");
+	}
+return 0;
+}
 //=======================================
 
 int main() {
 	while(1){
 	display_titlebar_x();
+	battery_warning();
 	sleep(30);
 	}
 }

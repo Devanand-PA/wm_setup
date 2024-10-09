@@ -125,7 +125,7 @@ static const Key keys[] = {
 	{ MODKEY|ControlMask,	        XK_m, 				spawn,          {.v = (const char*[]){"firefox","-P","Mail",NULL} } },
 	{ MODKEY,	                XK_m, 				spawn,          {.v = (const char*[]){"thunderbird",NULL} } },
 	{ MODKEY|Mod1Mask,	        XK_m, 				spawn,          {.v = (const char*[]){"firefox","-P","Manga",NULL} } },
-	{ MODKEY,	                XK_n, 				spawn,          {.v = (const char*[]){"st","-e","nvim",NULL} } },
+	{ MODKEY,	                XK_n, 				spawn,          {.v = (const char*[]){"xournal_Select",NULL} } },
 	{ MODKEY|Mod1Mask,		XK_r,   			quit,           {1} }, 
 //	{ MODKEY,			XK_r,   			quit,           {1} }, 
 	{ MODKEY|ControlMask,	        XK_b, 				spawn,          {.v = (const char*[]){"firefox","--private-window",NULL} } },
