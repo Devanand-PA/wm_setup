@@ -23,7 +23,7 @@ static const int showsystray        = 1;        /* 0 means no systray */
 
 #include "colors.h"
 
-static char *colors[][3] = {
+static const char *colors[][3] = {
        /*               fg           bg           border   */
        [SchemeNorm] = { normfgcolor, normbgcolor, normbordercolor },
        [SchemeSel]  = { selfgcolor,  selbgcolor,  selbordercolor  },
@@ -110,6 +110,7 @@ static const Key keys[] = {
 	/* modifier                     key     			function        argument */
 	{ MODKEY,                       XK_space,			spawn,          {.v = dmenucmd } },
 	{ MODKEY|ControlMask,           XK_c,				spawn,          SHCMD("xclip -o | xclip -sel clip") },
+	{ MODKEY|ControlMask,           XK_l,				spawn,          SHCMD("brightnessctl set $(: | dmenu -p 'Set Brightness :')") },
 	{ MODKEY,	                XK_x, 				spawn,          {.v = (const char*[]){TERM, NULL} } },
 	{ MODKEY,	                XK_v, 				spawn,          {.v = (const char*[]){"pcmanfm", NULL} } },
 	{ MODKEY|Mod1Mask,              XK_x, 				spawn,          {.v = (const char*[]){"tabbed","-k","st","-w" , NULL} } },
