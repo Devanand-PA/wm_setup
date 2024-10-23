@@ -43,6 +43,10 @@ dist: clean
 
 install: all
 	mkdir -p $(DESTDIR)$(PREFIX)/bin
+	rm $(DESTDIR)$(PREFIX)/bin/dmenu
+	rm $(DESTDIR)$(PREFIX)/bin/dmenu_path
+	rm $(DESTDIR)$(PREFIX)/bin/dmenu_run
+	rm $(DESTDIR)$(PREFIX)/bin/stest
 	cp -f dmenu dmenu_path dmenu_run stest $(DESTDIR)$(PREFIX)/bin
 	chmod 755 $(DESTDIR)$(PREFIX)/bin/dmenu
 	chmod 755 $(DESTDIR)$(PREFIX)/bin/dmenu_path
