@@ -1,9 +1,9 @@
 
 static char normbordercolor[] =  "#000000" ;
-static char normfgcolor[] = "#c3c2c9";
-static char normbgcolor[] = "#120712";
-static char selbordercolor[] = "#c3c2c9";
-static char selbgcolor[] = "#E9AA5F";
-static char selfgcolor[] = "#111111";
-static char dwm_titlebg[] = "#B15441";
-static char dwm_titlefg[] = "#000000";
+static char normfgcolor[] = "#c0b3b8";
+static char normbgcolor[] = "#0f100c";
+static char selbordercolor[] = "#c0b3b8";
+static char selbgcolor[] = "#706B49";
+static char selfgcolor[] = "#0f100c";
+static char dwm_titlebg[] = "#000000";
+static char dwm_titlefg[] = "#c0b3b8";
