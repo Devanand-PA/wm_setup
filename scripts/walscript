@@ -1,4 +1,4 @@
-#!/bin/env python
+#!/bin/env python3
 import os
 import json
 import argparse
@@ -47,7 +47,7 @@ dwm_res = {
         "dwm.normfgcolor" :wal_colors[7] ,
         "dwm.selbordercolor" :wal_colors[7] ,
         "dwm.selbgcolor" : wal_colors[2] ,
-        "dwm.selfgcolor" :  wal_colors[7] 
+        "dwm.selfgcolor" :  wal_colors[0] 
         }
 
 
