@@ -1,0 +1,26 @@
+#!/bin/python3
+import sys, os , subprocess
+DIRS = []
+ARGS = []
+if len(sys.argv) > 1 : 
+    for i in sys.argv[1:] :
+        if os.path.isdir(os.path.realpath(i)) :
+            DIRS.append(os.path.realpath(i))
+        else :
+            ARGS.append(i)
+if not(DIRS) :
+    MusicDIRS = os.listdir(os.path.expanduser("~/Music/"))
+    MusicDIRS = "\n".join(MusicDIRS)
+    selDIRS = subprocess.check_output(['dmenu','-i','-l','30'],input=MusicDIRS,text=True).rstrip()
+    for dir in selDIRS.split('\n') :
+        DIRS.append(os.path.join(os.path.expanduser("~/Music/"),dir))
+for dir in DIRS : 
+    FILES = []
+    if "image" in os.listdir(dir):
+        WAL = os.path.join(dir,"image")
+    else :
+        WAL = "/usr/share/wallpapers/wal"
+    for i in os.listdir(dir) :
+        if i != "image" and ( ".vtt" not in i) and ( ".srt" not in i ) :
+            FILES.append(os.path.join(dir,i))
+    subprocess.run(['mpv','--no-video','','--player-operation-mode=pseudo-gui','-fs','--sub-pos=55','--sub-scale=0.75','--no-resume-playback','--cover-art-file='+WAL,'--vid=1']+FILES+ARGS)
