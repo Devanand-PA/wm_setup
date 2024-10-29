@@ -24,9 +24,7 @@ sudo make clean install
 sudo cp dwm /usr/local/bin
 cd ../dmenu/
 sudo make clean install
-sudo cp dmenu /usr/local/bin
-sudo cp dmenu_run /usr/local/bin
-sudo cp dmenu_path /usr/local/bin
+sudo cp stest dmenu dmenu_run dmenu_path /usr/local/bin
 cd ../st/
 sudo make clean install
 sudo cp st /usr/local/bin
