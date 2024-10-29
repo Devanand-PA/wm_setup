@@ -114,6 +114,7 @@ static const Key keys[] = {
 	{ MODKEY,	                XK_x, 				spawn,          {.v = (const char*[]){TERM, NULL} } },
 	{ MODKEY,	                XK_v, 				spawn,          {.v = (const char*[]){"pcmanfm", NULL} } },
 	{ MODKEY|Mod1Mask,              XK_x, 				spawn,          {.v = (const char*[]){"tabbed","-k","st","-w" , NULL} } },
+	{ MODKEY|ShiftMask,             XK_space, 			spawn,          {.v = (const char*[]){"rofi","-show","drun","-show-icons" , NULL} } },
 	{ MODKEY,			XK_t,				spawn,		{.v = (const char*[]){"st","-e","calcurse" , NULL} } },
 	{ MODKEY|ControlMask,	        XK_s, 				spawn,          {.v = searchcmd } },
 	{ MODKEY|Mod1Mask,	        XK_s, 				spawn,          {.v = (const char*[]){"bookmarks","save",NULL} } },
