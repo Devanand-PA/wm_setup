@@ -15,19 +15,26 @@ esac
 [ -f ~/.profile ] || touch ~/.profile
 [ -f ~/.bash_profile ] || touch ~/.bash_profile
 WM_SETUP_DIR="$(pwd)"
+cp bash_profile ~/.bash_profile
+cp xinitrc ~/.xinitrc
 echo "export WM_SETUP_DIR='${WM_SETUP_DIR}'" >> ~/.profile
 echo "export WM_SETUP_DIR='${WM_SETUP_DIR}'" >> ~/.bash_profile
 cd dwm/
 sudo make clean install
+sudo cp dwm /usr/local/bin
 cd ../dmenu/
 sudo make clean install
+sudo cp dmenu /usr/local/bin
+sudo cp dmenu_run /usr/local/bin
+sudo cp dmenu_path /usr/local/bin
 cd ../st/
 sudo make clean install
+sudo cp st /usr/local/bin
 cd ../C_scripts/dwm_status/
 sudo make install
 cd ../..
 sudo cp ./dwm.desktop /usr/share/xsessions/
-python -m venv ~/venv
+python3 -m venv ~/venv
 pip install tk
 
 ###[Scripts]########
