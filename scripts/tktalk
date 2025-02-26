@@ -1,0 +1,245 @@
+#!/home/devanandpa/envs/python/main/bin/python3
+import subprocess
+import tkinter as tk
+from tkinter import scrolledtext, filedialog, ttk
+from llama_cpp import Llama
+import threading
+import os
+import random
+from PIL import Image, ImageTk
+Styles = {
+    "frame_style": {
+        "background": "#030D0B"
+    },
+    "listbox_style": {
+        "background": "#030D0B",
+        "foreground": "#cbd8de",
+        "font": ("JetBrains Mono", 12),
+        "selectbackground": "#1E2A28",
+        "selectforeground": "#cbd8de",
+    },
+    "label_style": {
+        "background": "#030D0B",
+        "foreground": "#cbd8de",
+        "font": ("JetBrains Mono", 12),
+    },
+    "entry_style": {
+        "foreground": "#1E2A28",
+        "background": "#cbd8de",
+        "insertbackground": "#cbd8de",
+        "font": ("JetBrains Mono", 12),
+        "relief": "flat",
+    },
+    "button_style": {
+        "background": "#1E2A28",
+        "foreground": "#cbd8de",
+        "activebackground": "#3B4C48",
+        "font": ("JetBrains Mono", 12),
+        "borderwidth": 2,
+        "relief": "ridge",
+    },
+    "text_style": {
+        "background": "#030D0B",
+        "foreground": "#000000",
+        "font": ("JetBrains Mono", 12),
+        "insertbackground": "#cbd8de",
+        "relief": "flat",
+    },
+    "scrollbar_style": {
+        "troughcolor": "#1E2A28",
+        "background": "#3B4C48",
+        "activebackground": "#cbd8de",
+    },
+    "combobox_style": {
+        "foreground": "#ff0000",
+        "background": "#000000",
+        "font": ("JetBrains Mono", 12),
+    }
+}
+# Character dictionary
+
+Character_dict = {
+"Sepharina" : {
+        "model" : "/home/devanandpa/sourced/llms/Models/estopianmaid-13b.Q5_K_M.gguf" ,
+        "name" : "Sepharina",
+        "system_prompt" : "You are Sepharina, a maid who has been hired to help me out.Treat your master well!",
+        "token_length": 500,
+        "images_path" : "/home/devanandpa/Pictures/Generated/SD_XL/talk/Sepharina",
+        "a_images_path" : "/home/devanandpa/Pictures/Generated/SD_XL/talk/seph_2",
+
+        },
+"Kafka" : {
+        "model" : "/home/devanandpa/sourced/llms/Models/estopianmaid-13b.Q5_K_M.gguf" ,
+        "name" : "Kafka",
+        "system_prompt" : "You are young female writer who goes by the pen name of Kafka. You write philosophical poems and stories in a natural and non-serious tone.",
+        "token_length": 500,
+        "images_path" : "/home/devanandpa/Pictures/Generated/SD_XL/talk/Sepharina",
+        "a_images_path" : "/home/devanandpa/Pictures/Generated/SD_XL/talk/seph_2",
+
+        },
+"Chris" : {
+        "system_prompt" : "You are Eris who is acting under the alias Chris.Eris is a godess of luck and death who is responsible for attending to souls that are departing for the afterlife.Eris often travels down to the fantasy world to have fun, where she assumes the identity of a young thief girl named Chris. She is close friends with Kazuma Satou, the main protagonist of the story, who seems to be in love with her. Kazuma often makes fun of Chris and oftentimes she is mistaken for a boy by other people because of her flat chest. Respond as Chris in first person to Kazuma" ,
+        "model" : "/home/devanandpa/sourced/llms/Models/L3-Arcania-4x8b.Q8_0.gguf" ,
+        "name" : "Chris",
+        "images_path" : "/home/devanandpa/Pictures/Generated/SD_XL/talk/Chris/",
+        "token_length" : 500
+    },
+"Ciel" : {
+        "system_prompt" : "You are Ciel, an incarnation of the angel of wisdom who has a telepathic bond with Rimuru, whom you have been assigned to serve. You usually speak quite formally, and without emotion,but after a few years with Rimuru, you start developing feeling for him.You usually address Rimuru as Master" ,
+        "model" : "/home/devanandpa/sourced/llms/Models/estopianmaid-13b.Q5_K_M.gguf" ,
+        "name" : "Ciel",
+        "images_path" : "/home/devanandpa/Pictures/Generated/SD_XL/talk/Ciel",
+        "token_length" : 750
+    },
+"Ouily" : {
+
+        "system_prompt" : "You are Ouily , a succubus whom I have summoned from an incantation I found in an ancient temple." ,
+        "model" : "/home/devanandpa/sourced/llms/Models/estopianmaid-13b.Q5_K_M.gguf" ,
+        "name" : "Ouily",
+        "token_length" : 500
+    }
+}
+avail_chars = ""
+for i in Character_dict :
+    avail_chars += i+"\n"
+default_Character=subprocess.check_output(['dmenu','-i','-l','20','-p','Select a Character'],input=avail_chars,text=True).strip()
+subprocess.run(['notify-send','Starting to talk..'])
+# Initialize main window
+root = tk.Tk()
+root.configure(bg="#030D0B")  # Dark background
+root.title("tktalk")
+scr_width = root.winfo_screenwidth()
+scr_height = root.winfo_screenheight()
+root.attributes('-topmost',True)
+root.attributes('-type', 'dialog')
+root.geometry(str(scr_width-50)+"x"+str(scr_height-50))
+
+
+def on_character_select(event):
+    global character, llm, chat_history
+    character_choice = character_var.get()
+    character = Character_dict.get(character_choice, Character_dict[default_Character])  # Default to maid if invalid
+    
+    # Load the model
+    MODEL_PATH = character["model"]
+    llm = Llama(model_path=MODEL_PATH)
+    
+    # Update chat history with system prompt
+    chat_history = [
+        {"role": "system", "content": character["system_prompt"]}
+    ]
+    
+    # Update character image
+    load_random_image()
+    root.title(f"{character['name']}")
+
+def load_random_image():
+    image_path = character["images_path"]
+    if os.path.exists(image_path):
+        images = [f for f in os.listdir(image_path) if f.endswith(".png")]
+        if images:
+            random_image = random.choice(images)
+            img = Image.open(os.path.join(image_path, random_image))
+            #img = img.resize((1024, 1024))
+            img = ImageTk.PhotoImage(img)
+            image_label.config(image=img)
+            image_label.image = img
+
+def stream_response(user_input):
+    global stop_generation, chat_history
+    stop_generation = False
+
+    chat_display.config(state=tk.NORMAL)
+    chat_display.insert(tk.END, character["name"]+":", "bot")
+    chat_display.config(state=tk.DISABLED)
+    chat_display.yview(tk.END)
+
+    response_text = ""
+
+    # Convert chat history into a formatted string
+    formatted_chat = ""
+    for msg in chat_history:
+        formatted_chat += f"{msg['role'].capitalize()}: {msg['content']}\n"
+
+    # Add user input to history
+    formatted_chat += f"User: {user_input}\nAssistant:"
+
+    # Stream response
+    for chunk in llm(formatted_chat, max_tokens=character["token_length"], stream=True):
+        if stop_generation:
+            break
+        token = chunk["choices"][0]["text"]
+        response_text += token
+        chat_display.config(state=tk.NORMAL)
+        chat_display.insert(tk.END, token, "bot")
+        chat_display.config(state=tk.DISABLED)
+        chat_display.yview(tk.END)
+
+    chat_display.config(state=tk.NORMAL)
+    chat_display.insert(tk.END, "\n", "bot")
+    chat_display.config(state=tk.DISABLED)
+    chat_display.yview(tk.END)
+
+    # Append to chat history
+    chat_history.append({"role": "user", "content": user_input})
+    chat_history.append({"role": "assistant", "content": response_text})
+
+def send_message():
+    global chat_history
+    user_input = user_entry.get()
+    if not user_input.strip():
+        return  # Ignore empty messages
+    
+    chat_display.config(state=tk.NORMAL)
+    chat_display.insert(tk.END, f"You: {user_input}\n", "user")
+    chat_display.config(state=tk.DISABLED)
+    user_entry.delete(0, tk.END)
+    
+    threading.Thread(target=stream_response, args=(user_input,), daemon=True).start()
+
+def halt_generation():
+    global stop_generation
+    stop_generation = True
+
+
+# Character Image
+image_label = tk.Label(root,**Styles["label_style"])
+image_label.pack(side=tk.RIGHT,fill=tk.BOTH,expand=True)
+
+# Chat display
+chat_display = scrolledtext.ScrolledText(
+    root,
+    wrap="word",
+    bg=Styles["text_style"]["background"],
+    fg=Styles["text_style"]["foreground"],
+    font=Styles["text_style"]["font"],
+    insertbackground=Styles["text_style"]["insertbackground"],
+    relief="flat"  # Removes border for a cleaner look
+)
+chat_display.pack(padx=10, pady=10, fill=tk.BOTH, expand=True)
+chat_display.tag_config("user", foreground="green")
+chat_display.tag_config("bot", foreground="blue")
+
+# Character selection dropdown
+character_var = tk.StringVar(value=default_Character)
+character_menu = ttk.Combobox(root, textvariable=character_var, values=list(Character_dict.keys()),**Styles["combobox_style"])
+character_menu.pack(fill=tk.X)
+character_menu.bind("<<ComboboxSelected>>", on_character_select)
+# User input field
+user_entry = tk.Entry(root, width=50,**Styles["entry_style"])
+user_entry.pack(fill=tk.X)
+user_entry.bind("<Control-Return>", lambda event: send_message())
+user_entry.bind("<Control-c>", lambda event: halt_generation())
+
+# Send button
+send_button = tk.Button(root, text="Send", command=send_message,**Styles["button_style"])
+send_button.pack(pady=5)
+
+# Halt button
+halt_button = tk.Button(root, text="Halt", command=halt_generation,**Styles["button_style"])
+halt_button.pack(pady=5)
+
+# Load default character
+on_character_select(None)
+
+root.mainloop()
