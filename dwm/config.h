@@ -98,8 +98,8 @@ static const char *searchcmd[]  = { "st","-c","st-fzf", "-e" , "filsrc","-m=fzf"
 //
 static const char *window_switcher_rofi[]  = { "rofi", "-show", "window" ,"-show-icons",  "-font", "JetBrains Mono 12" ,"-kb-row-down" ,"Alt+Tab", NULL };
 // static const char *window_switcher_rofi[]  = { "window_switcher" , NULL };
-static const char *brightnesscmd[][4] = {{"sh","-c","brightnessctl set 50- && chbright", NULL},{"sh","-c","brightnessctl set 50+ && chbright", NULL}};
-static const char *volumekeys[][8] = { {"sh","-c","amixer -D pulse set Master 1+ toggle && chvol",NULL},{"sh","-c","amixer -D pulse set Master 1+ unmute && amixer -q sset 'Master' 2%+ && chvol",NULL},{"sh","-c","amixer -D pulse set Master 1+ unmute && amixer -q sset 'Master' 2%- && chvol",NULL}};
+static const char *brightnesscmd[][4] = {{"sh","-c","brightnessctl set 50- ", NULL},{"sh","-c","brightnessctl set 50+ ", NULL}};
+static const char *volumekeys[][8] = { {"sh","-c","amixer -D pulse set Master 1+ toggle ",NULL},{"sh","-c","amixer -D pulse set Master 1+ unmute && amixer -q sset 'Master' 2%+ ",NULL},{"sh","-c","amixer -D pulse set Master 1+ unmute && amixer -q sset 'Master' 2%- ",NULL}};
 //static const char *volumekeys[][8] = {{"pactl","set-sink-mute","3","toggle",NULL},{"pactl","set-sink-volume","3","+1%",NULL},{"pactl","set-sink-volume","3","-1%",NULL}};
 static const char *applet_Command[]  = { "st","-f","JetBrains Mono:size=12","-e","applet_selector" ,NULL };
 static const char *screenshot[][3] = {{"screenshot",NULL},{"screenshot","-s",NULL}};
@@ -115,7 +115,7 @@ static const Key keys[] = {
 	{ MODKEY,	                XK_v, 				spawn,          {.v = (const char*[]){"pcmanfm", NULL} } },
 	{ MODKEY|Mod1Mask,              XK_x, 				spawn,          {.v = (const char*[]){"tabbed","-k","st","-w" , NULL} } },
 	{ MODKEY|ShiftMask,             XK_space, 			spawn,          {.v = (const char*[]){"rofi","-show","drun","-show-icons" , NULL} } },
-	{ MODKEY,			XK_t,				spawn,		{.v = (const char*[]){"st","-e","calcurse" , NULL} } },
+	{ MODKEY,			XK_t,				spawn,		{.v = (const char*[]){"tktalk" , NULL} } },
 	{ MODKEY|ControlMask,	        XK_s, 				spawn,          {.v = searchcmd } },
 	{ MODKEY|Mod1Mask,	        XK_s, 				spawn,          {.v = (const char*[]){"bookmarks","save",NULL} } },
 	{ MODKEY,		        XK_s, 				spawn,          {.v = (const char*[]){"subplay",NULL} } },
