@@ -1,11 +1,15 @@
 #!/bin/sh
 PATH="$HOME/.local/bin:$PATH"
 #xcompmgr -n &
-#picom --animations --vsync --animation-stiffness-tag-change 400 --animation-stiffness-in-tag 400 &
-picom --vsync -b
+picom --animations --vsync --animation-stiffness-tag-change 300 --animation-stiffness-in-tag 300 --corner-radius=15 --rounded-corners-exclude="class_g = 'dwm'" -b
+pasystray --notify=none --notify=sink --notify=source --notify=stream --notify=systray_action &
+#mpris-notifier &
+#/usr/lib/x86_64-linux-gnu/xfce4/notifyd/xfce4-notifyd &
+#picom --vsync -b
 export bg="$(cat $HOME/.cache/wal/wal)"
+#/usr/lib/notification-daemon/notification-daemon &
 dwm_statusbar_c &
-
 #redshift &
 xwallpaper --zoom /usr/share/wallpapers/wal
+#mpris-notifier &
 #xsetroot -solid "#ff0000"

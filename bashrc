@@ -43,7 +43,6 @@ picktheme() {
 	if [ "$bg" ]
 	then
 	settheme "$bg" $@
-	setbg "$bg"
 	fi
 
 }
@@ -74,9 +73,17 @@ j_n() {
 	if [ "${new_dir}" ] && [ "$new_dir" != "$(pwd)" ]
 	then
 	old_dir="$(pwd)"
+	if [ -d "${new_dir}" ]
+	then
 	command cd "${new_dir}"
 	new_dir="$(pwd)"
 	[ "$(grep "$new_dir" ~/.cd_history)" ] || echo "$new_dir" >> ~/.cd_history
+	echo $new_dir added
+	else
+	sed "s|${new_dir}||g" $HOME/.cd_history  -i
+	sed /^$/d $HOME/.cd_history -i
+	echo $new_dir removed
+	fi
 	fi
 }
 
@@ -85,8 +92,16 @@ j() {
 	if [ "${new_dir}" ] && [ "$new_dir" != "$(pwd)" ]
 	then
 	old_dir="$(pwd)"
+	if [ -d "${new_dir}" ]
+	then
 	command cd "${new_dir}"
 	[ "$(grep "$new_dir" ~/.cd_history)" ] || echo "$new_dir" >> ~/.cd_history
+	echo $new_dir added
+	else
+	sed "s|${new_dir}||g" $HOME/.cd_history  -i
+	sed /^$/d $HOME/.cd_history -i
+	echo $new_dir removed
+	fi
 	fi
 }
 
@@ -108,6 +123,11 @@ h(){
 	fi
 }
 
+pyactivate() {
+	num_venvs=$(ls ~/envs/python/ | wc -l)
+	VENV=$(ls ~/envs/python/ | fzf --height=$(( $num_venvs + 2 )))
+	source ~/envs/python/$VENV/bin/activate
+}
 cd() {
 new_dir=""
 ARG_STOP=0
@@ -124,12 +144,17 @@ do
 	esac
 done
 ARGS_STOP=0
-new_dir="$(realpath "${new_dir}")"
+[ "$newdir" ] && new_dir="$(realpath "${new_dir}")"
 [ "$new_dir" ] || new_dir="$HOME"
 [ "$curr_dir" != "$new_dir" ] && old_dir="$(pwd)" 
 [ "$(grep "$old_dir" ~/.cd_history)" ] || echo "$old_dir" >> ~/.cd_history
+[ "$(grep "$new_dir" ~/.cd_history)" ] || echo $(realpath "$new_dir") >> ~/.cd_history
+if [ -d "$new_dir" ]
+then
 [ "$new_dir" != "$old_dir" ] && command cd "$new_dir" $ARGS 
- [ "$(grep "$new_dir" ~/.cd_history)" ] || echo "$new_dir" >> ~/.cd_history
+else
+	echo not found "$new_dir"
+fi
 }
 
 #########################################
@@ -137,7 +162,6 @@ eval "$(dircolors -b)"
 
 #  NOTE : Put all your aliases here.
 ###########[ Aliases ]###############
-alias activate='source $HOME/venv/bin/activate' 
 alias thingstodo="vi ~/.peronal/thingstodo.md"
 alias pycalc='python -ic "from numpy import sin , cos , tan , e , pi , log"'
 alias sxiv='sxiv -a -b'
@@ -157,7 +181,7 @@ alias pf='find $HOME ! -type d | fzf '
 #alias sudo='sudo '
 #alias apt='nala'
 alias cal='ncal'
-alias ll='ls -1h'
+alias ll='ls -lh'
 alias la='ls -lAh'
 alias lt='ll -t'
 alias schedule='vi $HOME/.scripts/schedule/schedule.md'
@@ -188,6 +212,7 @@ fi
 #todolist
 set -o vi
 EDITOR="nvim"
-source $HOME/venv/bin/activate
-quotes
+source $HOME/envs/python/main/bin/activate
+#quotes
 #cat $HOME/.cache/wal/sequences
+cat ~/.welcomeback
