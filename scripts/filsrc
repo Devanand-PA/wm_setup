@@ -11,7 +11,7 @@ fi
 if [ "$FILENAME" ]
 then
 FILEEXTENTION="$(echo "$FILENAME" | awk -F '.' '{print $NF}')"
-DOCUMENT_VIEWER="zathura"
+DOCUMENT_VIEWER="okular"
 MEDIA_PLAYER="mpv"
 IMAGE_VIEWER="sxiv"
 OFFICE_SUITE="libreoffice"

@@ -3,6 +3,7 @@ theme=""
 alpha=""
 backend=""
 col_mode=""
+wal_enable="1"
 declare args=("$@")
 for arg in "${args[@]}"	
 do
@@ -15,6 +16,8 @@ do
 				alpha="${arg#*=}" ;;
 			-l )
 				col_mode="-l" && backend="--backend colorz" ;;
+			-w )
+				wal_enable="" ;;
 		esac
 	fi
 	
@@ -24,7 +27,7 @@ if [ "$theme" ]
 then
 wal -s -n $backend $col_mode -i "$theme" 
 walscript $alpha $col_mode
-sudo cp "$theme" /usr/share/wallpapers/wal
+[ "$wal_enable" ] && sudo cp "$theme" /usr/share/wallpapers/wal && setbg "$theme"
 cd $WM_SETUP_DIR/dmenu
 sudo make clean install
 cd $WM_SETUP_DIR/dwm
