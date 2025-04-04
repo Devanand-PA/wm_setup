@@ -1,29 +1,29 @@
 
 static const char *colorname[] = {
-"#24272a",      //  "black",
-"#C5B8AF",      //  "red3",
-"#CFCAB6",      //  "green3",
-"#C0BCC4",      //  "yellow3",
-"#D4CFCF",      //  "blue2",
-"#E3DBD6",      //  "magenta3",
-"#EAE7D9",      //  "cyan3",
-"#e8e4e8",      //  "#444444",
-"#a29fa2",      //  "gray50",
-"#C5B8AF",      //  "red",                        
-"#CFCAB6",     //  "green",
-"#C0BCC4",     //  "yellow",
-"#D4CFCF",     //  "#5c5cff" "light blue"
-"#E3DBD6",     //  "magenta"
-"#EAE7D9",     //  "cyan",
-"#e8e4e8",     //  "white",
+"#090a0c",      //  "black",
+"#493A4F",      //  "red3",
+"#394461",      //  "green3",
+"#57505F",      //  "yellow3",
+"#4E4F71",      //  "blue2",
+"#896F77",      //  "magenta3",
+"#3D5B80",      //  "cyan3",
+"#a6a6bb",      //  "#444444",
+"#747482",      //  "gray50",
+"#493A4F",      //  "red",                        
+"#394461",     //  "green",
+"#57505F",     //  "yellow",
+"#4E4F71",     //  "#5c5cff" "light blue"
+"#896F77",     //  "magenta"
+"#3D5B80",     //  "cyan",
+"#a6a6bb",     //  "white",
                             
 [255] = 0,
 
 /* more colors can be added after 255 to use with DefaultXX */
 "#444444",
 "#555555",
-"#e8e4e8",
-"#24272a", /* default background color */
+"#a6a6bb",
+"#090a0c", /* default background color */
 };
 /* bg opacity */
 float alpha = 0.75;
