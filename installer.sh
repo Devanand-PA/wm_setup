@@ -1,7 +1,8 @@
 #!/bin/sh
-Debian_deps="gcc make libxinerama-dev libxft-dev fontconfig fonts-liberation libx11-dev xinit x11-session-utils build-essential fonts-noto-cjk-extra fonts-font-awesome libxcb-xinerama0-dev libxcb1-dev libx11-xcb-dev libx11-xcb-dev bsdmainutils libxcb-res0-dev build-essential make alacritty python3-venv fonts-firacode expect libharfbuzz-dev fonts-jetbrains-mono libgd-dev xorg"
+Debian_deps="gcc make libxinerama-dev libxft-dev fontconfig fonts-liberation libx11-dev xinit x11-session-utils build-essential fonts-noto-cjk-extra fonts-font-awesome libxcb-xinerama0-dev libxcb1-dev libx11-xcb-dev libx11-xcb-dev bsdmainutils libxcb-res0-dev build-essential make alacritty python3-venv fonts-firacode expect libharfbuzz-dev fonts-jetbrains-mono libgd-dev xorg python3-venv notification-daemon"
+
 Arch_deps="libxinerama libxft fontconfig ttf-liberation xorg-xinit curl wget base-devel alacritty ttf-fira-code python3-tk python3-pil python3-pil.imagetk"
-Common_utils="alsa-utils acpi  links nsxiv mpv fzf curl wget htop brightnessctl tk scrot  xwallpaper  notifications-daemon"
+Common_utils="alsa-utils acpi  links nsxiv mpv fzf curl wget htop brightnessctl tk scrot  xwallpaper   make "
 
 dist=$(lsb_release -i | grep ID | awk -F ':\t' '{print $2}')
 case $dist in
@@ -17,6 +18,7 @@ esac
 WM_SETUP_DIR="$(pwd)"
 cp bash_profile ~/.bash_profile
 cp xinitrc ~/.xinitrc
+cp xsessionrc ~/.xsessionrc
 echo "export WM_SETUP_DIR='${WM_SETUP_DIR}'" >> ~/.profile
 echo "export WM_SETUP_DIR='${WM_SETUP_DIR}'" >> ~/.bash_profile
 cd dwm/
