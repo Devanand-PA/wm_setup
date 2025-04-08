@@ -80,7 +80,7 @@ j_n() {
 	[ "$(grep "$new_dir" ~/.cd_history)" ] || echo "$new_dir" >> ~/.cd_history
 	echo $new_dir added
 	else
-	sed "s|${new_dir}||g" $HOME/.cd_history  -i
+	sed "s|^${new_dir}$||g" $HOME/.cd_history  -i
 	sed /^$/d $HOME/.cd_history -i
 	echo $new_dir removed
 	fi
@@ -98,7 +98,7 @@ j() {
 	[ "$(grep "$new_dir" ~/.cd_history)" ] || echo "$new_dir" >> ~/.cd_history
 	echo $new_dir added
 	else
-	sed "s|${new_dir}||g" $HOME/.cd_history  -i
+	sed "s|^${new_dir}$||g" $HOME/.cd_history  -i
 	sed /^$/d $HOME/.cd_history -i
 	echo $new_dir removed
 	fi
@@ -196,6 +196,7 @@ alias infread='nano -0 -i -x -t /tmp/nano_temp && rm /tmp/nano_temp'
 alias c=cd
 alias m="man -k . | fzf | awk '{print \$1}' | xargs man"
 alias wtr=" curl https://wttr.in"
+alias hugotime="date '+%FT%T%:z'"
 #alias sudo='doas --'
 #
 #####################################
@@ -215,4 +216,3 @@ EDITOR="nvim"
 source $HOME/envs/python/main/bin/activate
 #quotes
 #cat $HOME/.cache/wal/sequences
-cat ~/.welcomeback
