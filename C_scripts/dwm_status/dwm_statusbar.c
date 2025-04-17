@@ -15,14 +15,8 @@ char charging_status[20];
 //===================================
 
 //======================================
-int display_titlebar_x() {
-// Time
-time(&rawtime);
-timeinfo = localtime(&rawtime);
-strftime(time_buffer, sizeof(time_buffer), "%a %d %b %I:%M %p", timeinfo);
-//=============================================
-// Battery
-file = fopen("/sys/class/power_supply/BAT0/capacity", "r");
+int battery_functions() {
+	file = fopen("/sys/class/power_supply/BAT0/capacity", "r");
 if (file == NULL) {
         printf("Error opening file.\n");
         return 1;
@@ -75,6 +69,32 @@ else {
 	sprintf(bat_icon,"%s⚡", bat_icon);
 }
 
+}
+
+
+
+
+
+int display_titlebar_x() {
+// Time
+time(&rawtime);
+timeinfo = localtime(&rawtime);
+strftime(time_buffer, sizeof(time_buffer), "%a %d %b %I:%M %p", timeinfo);
+//=============================================
+// Battery
+
+char bat_icon[50] = "[No Battery]";
+battery_percentage = 0;
+if( access( "/sys/class/power_supply/BAT0/capacity", F_OK ) == 0 ) {
+		printf("\nBat exists\n");
+battery_functions();
+  // file exists
+} else {
+
+		printf("\nBat doesn't exist\n");
+  // file doesn't exist
+}
+
 //=============================================
 // X11
 sprintf(set_to_bar, "%s |BAT %s[%d]%%",time_buffer,bat_icon,battery_percentage);
@@ -92,18 +112,18 @@ sprintf(set_to_bar, "%s |BAT %s[%d]%%",time_buffer,bat_icon,battery_percentage);
     return 0;
 }
 
-int battery_warning(){
-if (battery_percentage <=15) {
-system("dunstify 'Battery Warning' 'Low Battery' -u critical");
-	}
-return 0;
-}
+// int battery_warning(){
+// if (battery_percentage <=15) {
+// system("dunstify 'Battery Warning' 'Low Battery' -u critical");
+// 	}
+// return 0;
+// }
 //=======================================
 
 int main() {
 	while(1){
 	display_titlebar_x();
-	battery_warning();
+	//battery_warning();
 	sleep(30);
 	}
 }
