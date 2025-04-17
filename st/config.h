@@ -12,6 +12,7 @@ static char *font2[] = {
 /*	"Inconsolata for Powerline:pixelsize=12:antialias=true:autohint=true", */
 /*	"Hack Nerd Font Mono:pixelsize=11:antialias=true:autohint=true", */
 	"HanaMin A"
+	"Symbols"
 };
 
 static int borderpx = 0.1;
