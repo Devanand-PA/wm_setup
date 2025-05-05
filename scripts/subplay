@@ -8,12 +8,18 @@ if len(sys.argv) > 1 :
             DIRS.append(os.path.realpath(i))
         else :
             ARGS.append(i)
+
+ARGS += ['--shuffle=yes']
+
 if not(DIRS) :
-    MusicDIRS = os.listdir(os.path.expanduser("~/Music/"))
-    MusicDIRS = "\n".join(MusicDIRS)
+    MusicDIRS = subprocess.check_output(['find',os.path.expanduser("~/Music/"),'-type','d'],text=True).rstrip().split('\n')
+    for i in range(len(MusicDIRS)) :
+        MusicDIRS[i] = os.path.relpath(MusicDIRS[i],os.path.expanduser("~/Music/"))
+    MusicDIRS="\n".join(MusicDIRS)
     selDIRS = subprocess.check_output(['dmenu','-i','-l','30'],input=MusicDIRS,text=True).rstrip()
     for dir in selDIRS.split('\n') :
         DIRS.append(os.path.join(os.path.expanduser("~/Music/"),dir))
+
 
 if "--ind-dirs" in sys.argv :   
     for dir in DIRS : 
@@ -29,7 +35,8 @@ if "--ind-dirs" in sys.argv :
 else :
     FILES = []
     for dir in DIRS : 
-        for i in os.listdir(dir) :
-            if i != "image" and ( ".vtt" not in i) and ( ".srt" not in i ) :
-                FILES.append(os.path.join(dir,i))
-    subprocess.run(['mpv','--no-video','','--player-operation-mode=pseudo-gui','-fs','--sub-pos=55','--sub-scale=0.75','--no-resume-playback','--vid=1']+FILES+ARGS)
+        for i in list(subprocess.check_output(['find',dir,'-type','f'],text=True).split('\n')) :
+            for j in ['mp4','mp3','opus','mkv','webm','m4a'] :
+                if j in i :
+                    FILES.append(os.path.join(dir,i))
+    subprocess.run(['mpv','--no-video','','--player-operation-mode=pseudo-gui','-fs','--sub-pos=55','--sub-scale=0.75','--no-resume-playback','--vid=1','--af=lavfi=[loudnorm=I=-16:TP=-3:LRA=4]']+FILES+ARGS)
