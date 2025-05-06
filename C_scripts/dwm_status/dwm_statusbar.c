@@ -12,6 +12,7 @@ FILE *file;
 int battery_percentage;
 char set_to_bar[100];
 char charging_status[20];
+char bat_icon[50] = "[No Battery]";
 //===================================
 
 //======================================
@@ -39,9 +40,10 @@ static const char *BAT_ARRAY[] = {"🟥","🟥","🟧","🟧","🟨","🟨","�
 //static const char *BAT_ARRAY[] = {"█","█","█","█","█","█","█","█","█","█"};
 
 //This thing overwrites bat_10 if you don't give it atleast twice the memory because those coloured blocks are ""
-char bat_icon[50] = "[";
 
 int bat_10 = ((battery_percentage+5)/10.0) ;
+sprintf(bat_icon,"[");
+
 //int bat_10 = 8;
 
 //printf("bat_10 is :");
@@ -83,7 +85,6 @@ strftime(time_buffer, sizeof(time_buffer), "%a %d %b %I:%M %p", timeinfo);
 //=============================================
 // Battery
 
-char bat_icon[50] = "[No Battery]";
 battery_percentage = 0;
 if( access( "/sys/class/power_supply/BAT0/capacity", F_OK ) == 0 ) {
 		printf("\nBat exists\n");
