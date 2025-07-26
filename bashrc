@@ -35,7 +35,7 @@ quote_file=""
 
 
 searchpkg() {
-	unbuffer apt search "$@"  | less -r
+	apt search "$@"
 }
 
 picktheme() {
@@ -144,7 +144,7 @@ do
 	esac
 done
 ARGS_STOP=0
-[ "$newdir" ] && new_dir="$(realpath "${new_dir}")"
+[ "$new_dir" ] && new_dir="$(realpath "${new_dir}")"
 [ "$new_dir" ] || new_dir="$HOME"
 [ "$curr_dir" != "$new_dir" ] && old_dir="$(pwd)" 
 [ "$(grep "$old_dir" ~/.cd_history)" ] || echo "$old_dir" >> ~/.cd_history
@@ -214,5 +214,10 @@ fi
 set -o vi
 EDITOR="nvim"
 source $HOME/envs/python/main/bin/activate
-#quotes
+quotes
 #cat $HOME/.cache/wal/sequences
+
+# Added by LM Studio CLI (lms)
+export PATH="$PATH:/home/devanandpa/.lmstudio/bin"
+# End of LM Studio CLI section
+

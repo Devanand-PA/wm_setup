@@ -14,10 +14,8 @@ def get_input(prompt):
 DATE=datetime.datetime.now().strftime("%a %b %d %H:%M:%S %Z %Y")
 OPTIONS=""
 FILENAME=""
-if sys.argv[1:] :
-    OPTIONS = sys.argv[1]
+if sys.argv[1] == "-s" :
     FILENAME = get_input("Enter Screenshot Name :") 
-if FILENAME :
     test=os.path.expanduser("~/Pictures/Named_Screenshots/"+FILENAME)
     DIRNAME = os.path.dirname(test)
     if not(os.path.isdir(DIRNAME)) :
@@ -25,15 +23,19 @@ if FILENAME :
     i = 0
     while os.path.basename(test) in os.listdir(os.path.dirname(test)) :
         i +=1
-        test = FILENAME+"_"+str(i)
-    FILENAME = test+".jpg"
-
+        test = FILENAME+"_"+str(i)+".jpg"
+    OPTIONS="named"
+    FILENAME=test+".jpg"
+elif sys.argv[1] == "-x" :
+    OPTIONS="xclip"
 else :
     FILENAME=os.path.expanduser("~/Pictures/Screenshots/"+DATE+".jpg")
 
 
 
-if OPTIONS :
+if OPTIONS=="named" :
     subprocess.run(["scrot", "--select", FILENAME])
-else :
+elif OPTIONS == "xclip" :
+    subprocess.run('scrot --select -F - | xclip -t image/png -sel clip',shell=True)
+elif sys.argv[1] == "" :
     subprocess.run(["scrot",FILENAME])

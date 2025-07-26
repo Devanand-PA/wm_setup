@@ -5,9 +5,9 @@
 /* appearance */
 static const char *fonts[]          = { 
 //	"Noto Color Emoji:size=9" ,
-	"Liberation Mono :size=11",
+	"Liberation Mono :size=13",
 //	"JetBrains Mono Nerd Font:size=11",
-	"Noto Color Emoji:size=9" 
+	"Noto Color Emoji:size=11" 
 };
 static const unsigned int borderpx  = 1;        /* border pixel of windows */
 static const unsigned int snap      = 1;       /* snap pixel */
@@ -102,7 +102,7 @@ static const char *brightnesscmd[][4] = {{"sh","-c","brightnessctl set 50- ", NU
 static const char *volumekeys[][8] = { {"sh","-c","amixer -D pulse set Master 1+ toggle ",NULL},{"sh","-c","amixer -D pulse set Master 1+ unmute && amixer -q sset 'Master' 2%+ ",NULL},{"sh","-c","amixer -D pulse set Master 1+ unmute && amixer -q sset 'Master' 2%- ",NULL}};
 //static const char *volumekeys[][8] = {{"pactl","set-sink-mute","3","toggle",NULL},{"pactl","set-sink-volume","3","+1%",NULL},{"pactl","set-sink-volume","3","-1%",NULL}};
 static const char *applet_Command[]  = { "st","-f","JetBrains Mono:size=12","-e","applet_selector" ,NULL };
-static const char *screenshot[][3] = {{"screenshot",NULL},{"screenshot","-s",NULL}};
+static const char *screenshot[][3] = {{"screenshot",NULL},{"screenshot","-s",NULL},{"screenshot","-x",NULL}};
 
 //
 //
@@ -131,8 +131,9 @@ static const Key keys[] = {
 	{ MODKEY|Mod1Mask,		XK_r,   			quit,           {1} }, 
 //	{ MODKEY,			XK_r,   			quit,           {1} }, 
 	{ MODKEY|ControlMask,	        XK_b, 				spawn,          {.v = (const char*[]){"firefox","--private-window",NULL} } },
+	{ MODKEY|ShiftMask,	        XK_r, 				spawn,          {.v = (const char*[]){"reload_screen",NULL} } },
 	{ MODKEY|ShiftMask,	        XK_p, 				spawn,          {.v = (const char*[]){"librewolf",NULL} } },
-	{ MODKEY,		        XK_p, 				spawn,          {.v = (const char*[]){"random_math_stuff",NULL} } },
+	{ MODKEY,		        XK_p, 				spawn,          {.v = (const char*[]){"playsong",NULL} } },
 	{ Mod1Mask,		XK_Tab, 			spawn,          {.v = window_switcher_rofi} },
 	{ MODKEY,	                XK_b, 				spawn,          {.v = (const char*[]){"flatpak","run","app.zen_browser.zen","-P","Personal",NULL} } },
 	{ MODKEY,			XK_o, 				spawn,          SHCMD("cat ~/.xdg_open_history | dmenu -l 30 -i | xargs -I {} filsrc '{}' ") },
@@ -148,6 +149,7 @@ static const Key keys[] = {
 	{ 0,		                XF86XK_AudioLowerVolume, 	spawn, 		{.v = volumekeys[2] } },
 	{ 0,				XK_Print,			spawn,		{.v = screenshot[0] } },
 	{ MODKEY,			XK_Print,			spawn,		{.v = screenshot[1] } },
+	{ ShiftMask,		XK_Print,			spawn,		{.v = screenshot[2] } },
 	{ MODKEY|ShiftMask,             XK_b,      			togglebar, 	{0} },
 	{ MODKEY,                       XK_j,      			focusstack,     {.i = +1 } },
 	{ MODKEY,                       XK_k,      			focusstack,     {.i = -1 } },

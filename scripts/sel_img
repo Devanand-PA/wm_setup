@@ -8,18 +8,46 @@ import os
 from PIL import Image , ImageTk
 import json
 #====================================
-with open(os.path.expanduser('~/.config/Tkinter/style.json')) as FILE:
-    style = json.load(FILE)
-frame_style = style["frame_style"]
-listbox_style = style["listbox_style"]
-label_style = style["label_style"]
 #======================================
 im_height = 1000
 im_width = 1000
 
 
+DEFAULT_STYLES = {
+    "frame_style": {"background": "#2e3440"},
+    "listbox_style": {
+        "background": "#3b4252",
+        "foreground": "#d8dee9",
+        "selectbackground": "#88c0d0",
+        "selectforeground": "#2e3440",
+        "borderwidth": 0,
+        "highlightthickness": 0
+    },
+    "label_style": {
+        "background": "#2e3440",
+        "foreground": "#eceff4",
+        "font": ("sans-serif", 12)
+    },
+    "entry_style": {
+        "background": "#4c566a",
+        "foreground": "#d8dee9",
+        "insertbackground": "#d8dee9", # Cursor color
+        "borderwidth": 0,
+        "highlightthickness": 1,
+        "highlightbackground": "#3b4252",
+        "highlightcolor": "#88c0d0"
+    }
+}
 #=========================================
-
+if os.path.isfile(os.path.expanduser('~/.config/Tkinter/style.json')) :
+    with open(os.path.expanduser('~/.config/Tkinter/style.json')) as FILE:
+        style = json.load(FILE)
+else :
+    style = DEFAULT_STYLES
+frame_style = style["frame_style"]
+listbox_style = style["listbox_style"]
+label_style = style["label_style"]
+#===========================================
 
 def set_focusup_to_listbox(event):
     global listbox

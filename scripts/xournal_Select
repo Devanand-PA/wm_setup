@@ -4,7 +4,7 @@ import subprocess
 
 def get_input(prompt):
     # Call dmenu with the prompt
-    dmenu_promt = f"cd ~/Documents/Notes/ && find -type f | dmenu -l 30 -p '{prompt}'"
+    dmenu_promt = f"cd ~/Documents/Notes/ && find -type f | rofi -p '{prompt}' -dmenu -theme gruvbox-light"
     output = subprocess.check_output(dmenu_promt, shell=True, universal_newlines=True)
     # Return the output without the newline character
     return output.strip().replace('.xopp','')
