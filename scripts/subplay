@@ -37,6 +37,6 @@ else :
     for dir in DIRS : 
         for i in list(subprocess.check_output(['find',dir,'-type','f'],text=True).split('\n')) :
             for j in ['mp4','mp3','opus','mkv','webm','m4a'] :
-                if j in i :
+                if j in i and not(os.path.join(dir,i) in FILES):
                     FILES.append(os.path.join(dir,i))
     subprocess.run(['mpv','--no-video','','--player-operation-mode=pseudo-gui','-fs','--sub-pos=55','--sub-scale=0.75','--no-resume-playback','--vid=1','--af=lavfi=[loudnorm=I=-16:TP=-3:LRA=4]']+FILES+ARGS)

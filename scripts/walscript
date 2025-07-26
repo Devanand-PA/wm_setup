@@ -24,16 +24,16 @@ else :
     title_fg = wal_colors[15]
     title_bg = "#000000"
 
-# Vim
-wal_vim = os.path.expanduser('~/.cache/wal/colors-wal.vim')
-vim_color = os.path.expanduser('~/.config/nvim/colors/colors-wal.vim')
-with open(wal_vim) as FILE :
-    raw_vim = FILE.read()
-edited_vim = raw_vim.replace("let ","let g:")
-
-with open(vim_color,'w') as FILE:
-    FILE.write(edited_vim)
-
+# # Vim
+# wal_vim = os.path.expanduser('~/.cache/wal/colors-wal.vim')
+# vim_color = os.path.expanduser('~/.config/nvim/colors/colors-wal.vim')
+# with open(wal_vim) as FILE :
+#     raw_vim = FILE.read()
+# edited_vim = raw_vim.replace("let ","let g:")
+#
+# with open(vim_color,'w') as FILE:
+#     FILE.write(edited_vim)
+#
 # dwm
 wal_dwm = os.path.expanduser('~/.cache/wal/colors-wal-dwm.h') 
 dwm_color = os.path.join(WM_SETUP_DIR,'dwm/colors.h') 

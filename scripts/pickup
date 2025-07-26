@@ -5,7 +5,7 @@ import os
 import json
 
 filePath , data , bookNames , curr , realPath = "" , "" , "" , "" , ""
-document_viewer = [ "zathura", "--mode", "fullscreen" ]
+document_viewer = [ "okular" ]
 read_toggle = True
 def choose_book(Chosen) :
     global bookNames , curr , realPath , data , filePath
