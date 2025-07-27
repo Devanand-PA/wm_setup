@@ -99,7 +99,7 @@ static const char *searchcmd[]  = { "st","-c","st-fzf", "-e" , "filsrc","-m=fzf"
 static const char *window_switcher_rofi[]  = { "rofi", "-show", "window" ,"-show-icons",  "-font", "JetBrains Mono 12" ,"-kb-row-down" ,"Alt+Tab", NULL };
 // static const char *window_switcher_rofi[]  = { "window_switcher" , NULL };
 static const char *brightnesscmd[][4] = {{"sh","-c","brightnessctl set 50- ", NULL},{"sh","-c","brightnessctl set 50+ ", NULL}};
-static const char *volumekeys[][8] = { {"sh","-c","amixer -D pulse set Master 1+ toggle ",NULL},{"sh","-c","amixer -D pulse set Master 1+ unmute && amixer -q sset 'Master' 2%+ ",NULL},{"sh","-c","amixer -D pulse set Master 1+ unmute && amixer -q sset 'Master' 2%- ",NULL}};
+static const char *volumekeys[][8] = { {"sh","-c","amixer -q sset Master toggle ",NULL},{"sh","-c","amixer -q sset Master unmute && amixer -q sset 'Master' 2%+ ",NULL},{"sh","-c","amixer -q sset Master unmute && amixer -q sset 'Master' 2%- ",NULL}};
 //static const char *volumekeys[][8] = {{"pactl","set-sink-mute","3","toggle",NULL},{"pactl","set-sink-volume","3","+1%",NULL},{"pactl","set-sink-volume","3","-1%",NULL}};
 static const char *applet_Command[]  = { "st","-f","JetBrains Mono:size=12","-e","applet_selector" ,NULL };
 static const char *screenshot[][3] = {{"screenshot",NULL},{"screenshot","-s",NULL},{"screenshot","-x",NULL}};
