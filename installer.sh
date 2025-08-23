@@ -16,11 +16,11 @@ esac
 [ -f ~/.profile ] || touch ~/.profile
 [ -f ~/.bash_profile ] || touch ~/.bash_profile
 WM_SETUP_DIR="$(pwd)"
+echo "export WM_SETUP_DIR='${WM_SETUP_DIR}'" >> ~/.profile
+echo "export WM_SETUP_DIR='${WM_SETUP_DIR}'" >> ~/.bash_profile
 cp bash_profile ~/.bash_profile
 cp xinitrc ~/.xinitrc
 cp xsessionrc ~/.xsessionrc
-echo "export WM_SETUP_DIR='${WM_SETUP_DIR}'" >> ~/.profile
-echo "export WM_SETUP_DIR='${WM_SETUP_DIR}'" >> ~/.bash_profile
 cd dwm/
 sudo make clean install
 sudo cp dwm /usr/local/bin
