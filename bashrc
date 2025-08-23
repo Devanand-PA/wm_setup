@@ -32,7 +32,7 @@ quote_file="$(echo "$quote_files" | awk -F '/' '{print $NF}' | fzf --preview='ca
 quote_file=""
 }
 
-
+source ~/.bash_functions/cd_functions_1.sh
 
 searchpkg() {
 	apt search "$@"
@@ -213,11 +213,12 @@ fi
 #todolist
 set -o vi
 EDITOR="nvim"
-source $HOME/envs/python/main/bin/activate
-quotes
+#source $HOME/envs/python/main/bin/activate
+#quotes
 #cat $HOME/.cache/wal/sequences
 
 # Added by LM Studio CLI (lms)
 export PATH="$PATH:/home/devanandpa/.lmstudio/bin"
 # End of LM Studio CLI section
 
+export PKG_CONFIG_PATH=/usr/lib/x86_64-linux-gnu/pkgconfig:$PKG_CONFIG_PATH

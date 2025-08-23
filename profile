@@ -4,7 +4,6 @@
 #xmodmap ~/.Xmodmap
 export DENO_INSTALL="/home/devanandpa/.deno"
 export PATH="$DENO_INSTALL/bin:$PATH"
-export WM_SETUP_DIR='/home/devanandpa/sourced/wm_setup'
 
 #export "$(dbus-launch)"
 #export PATH="$PATH:$HOME/.local/bin:$HOME/.scripts/bin:$HOME/sourced/android-studio/bin"
