@@ -6,13 +6,7 @@ include config.mk
 SRC = drw.c dmenu.c stest.c util.c
 OBJ = $(SRC:.c=.o)
 
-all: options dmenu stest
-
-options:
-	@echo dmenu build options:
-	@echo "CFLAGS   = $(CFLAGS)"
-	@echo "LDFLAGS  = $(LDFLAGS)"
-	@echo "CC       = $(CC)"
+all: dmenu stest
 
 .c.o:
 	$(CC) -c $(CFLAGS) $<
@@ -29,7 +23,6 @@ stest: stest.o
 	$(CC) -o $@ stest.o $(LDFLAGS)
 
 clean:
-	rm config.h
 	rm -f dmenu stest $(OBJ) dmenu-$(VERSION).tar.gz
 
 dist: clean
@@ -43,10 +36,6 @@ dist: clean
 
 install: all
 	mkdir -p $(DESTDIR)$(PREFIX)/bin
-	rm $(DESTDIR)$(PREFIX)/bin/dmenu
-	rm $(DESTDIR)$(PREFIX)/bin/dmenu_path
-	rm $(DESTDIR)$(PREFIX)/bin/dmenu_run
-	rm $(DESTDIR)$(PREFIX)/bin/stest
 	cp -f dmenu dmenu_path dmenu_run stest $(DESTDIR)$(PREFIX)/bin
 	chmod 755 $(DESTDIR)$(PREFIX)/bin/dmenu
 	chmod 755 $(DESTDIR)$(PREFIX)/bin/dmenu_path
@@ -66,4 +55,4 @@ uninstall:
 		$(DESTDIR)$(MANPREFIX)/man1/dmenu.1\
 		$(DESTDIR)$(MANPREFIX)/man1/stest.1
 
-.PHONY: all options clean dist install uninstall
+.PHONY: all clean dist install uninstall
