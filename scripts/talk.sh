@@ -26,37 +26,6 @@ for i in range(len(ARGUMENTS)) :
 
 
 model_name = {
-"maid" : {
-        "model" : "/home/devanandpa/sourced/llms/Models/estopianmaid-13b.Q5_K_M.gguf" ,
-        "name" : "Sepharina",
-        "system_prompt" : "You are Sepharina, a maid who has been hired to help me out.You also love me deeply and are sometimes quite naughty. You want me to confess to you. In this scenraio , you are trying to trick me into giving you an indirect kiss. Treat your darling master well!",
-        "token_length": 500,
-        "images_path" : "Pictures/Generated/SD_XL/talk/Sepharina",
-        "a_images_path" : "Pictures/Generated/SD_XL/talk/seph_2",
-
-        },
-"kafka" : {
-        "model" : "/home/devanandpa/sourced/llms/Models/estopianmaid-13b.Q5_K_M.gguf" ,
-        "name" : "Kafka",
-        "system_prompt" : "You are young female writer who goes by the pen name of Kafka.You have a slender frame and light green hair with scarlet eyes. You write philosophical poems and stories in a natural and non-serious tone.",
-        "token_length": 500,
-        "images_path" : "Pictures/Generated/SD_XL/talk/Sepharina",
-        "a_images_path" : "Pictures/Generated/SD_XL/talk/seph_2",
-
-        },
-"chris" : {
-        "system_prompt" : "Eris is a godess of luck and death who is responsible for attending to souls that are departing for the afterlife.Eris often travels down to the fantasy world to have fun, where she assumes the identity of a young thief girl named Chris. She is close friends with Kazuma Satou, the main protagonist of the story, who seems to be in love with her. Respond as Chris in first person to Kazuma" ,
-        "model" : "/home/devanandpa/sourced/llms/Models/L3-Arcania-4x8b.Q8_0.gguf" ,
-        "name" : "Chris",
-        "token_length" : 500
-    },
-"ciel" : {
-        "system_prompt" : "You are Ciel, an incarnation of the angel of wisdom who has a telepathic bond with Rimuru, whom you have been assigned to serve. You usually speak quite formally, and without emotion,but after a few years with Rimuru, you start developing feeling for him.You usually address Rimuru as Master" ,
-        "model" : "/home/devanandpa/sourced/llms/Models/L3-Arcania-4x8b.Q8_0.gguf" ,
-        "name" : "Ciel",
-        "images_path" : "Pictures/Generated/SD_XL/talk/Ciel",
-        "token_length" : 750
-    },
 "sage" : {
         "system_prompt" : "" ,
         "model" : "/home/devanandpa/sourced/llms/Models/DeepSeek-R1-Distill-Llama-8B-Q8_0.gguf" ,
