@@ -27,25 +27,16 @@ searchquotes(){
  else
 	quote_files="$(ls $HOME/.scripts/quotes/*)"
  fi
-quote_file="$(echo "$quote_files" | awk -F '/' '{print $NF}' | fzf --preview='cat ~/.scripts/quotes/{}' --preview-window=left,90%)"
+quote_file="$(echo "$quote_files" | awk -F '/' '{print $NF}' | fzf --preview='cat ~/.scripts/quotes/{}' --preview-window=left,90%,wrap)"
 [ "$quote_file" ] && cat $HOME/.scripts/quotes/$quote_file
 quote_file=""
 }
 
-source ~/.bash_functions/cd_functions_1.sh
 
 searchpkg() {
 	apt search "$@"
 }
 
-picktheme() {
-	bg="$(sel_img $(find $HOME/Pictures/Backgrounds -type d))"
-	if [ "$bg" ]
-	then
-	settheme "$bg" $@
-	fi
-
-}
 quotes(){
 printf "\e[0;2;3m"
 cat $(ls $HOME/.scripts/quotes/* | shuf | head -1)
@@ -56,7 +47,7 @@ o() {
 if [ "$1" ]
 then
 	sel_file="$(realpath "$1")"
-	filsrc "$sel_file" 
+	filsrc "$@" 
 	[ "$(grep "$sel_file" ~/.xdg_open_history)" ] || ( echo "$sel_file" >> ~/.xdg_open_history )
 else
 	sel_file="$(cat ~/.xdg_open_history | fzf)"
@@ -162,18 +153,12 @@ eval "$(dircolors -b)"
 
 #  NOTE : Put all your aliases here.
 ###########[ Aliases ]###############
-alias thingstodo="vi ~/.peronal/thingstodo.md"
 alias pycalc='python -ic "from numpy import sin , cos , tan , e , pi , log"'
-alias sxiv='sxiv -a -b'
-alias feh='feh -B black --scale-down --keep-zoom-vp'
-alias rm='trash'
-alias l="pickup -l"
 alias less='less -RM'
 alias tt="cat ~/Documents/Shit/timetable"
 #alias ..='cd .. && echo "$(pwd)" >> ~/.cd_history'
-alias bat='batcat'
 alias python='python3'
-alias ls='ls --color=auto'
+alias ls='lsd --color=auto'
 #alias cd='old_dir="$(pwd)" && cd'
 alias pd='find $HOME -type d | fzf '
 alias pf='find $HOME ! -type d | fzf '
@@ -191,7 +176,6 @@ alias cando='vi $HOME/.scripts/cando/cando.md'
 alias :q='exit'
 alias ytbrowse='ytbrowse -m="fzf -m"'
 alias :h='info bash'
-alias zathura='zathura --mode fullscreen'
 alias infread='nano -0 -i -x -t /tmp/nano_temp && rm /tmp/nano_temp'
 alias c=cd
 alias m="man -k . | fzf | awk '{print \$1}' | xargs man"
@@ -214,11 +198,7 @@ fi
 set -o vi
 EDITOR="nvim"
 #source $HOME/envs/python/main/bin/activate
-#quotes
+quotes
 #cat $HOME/.cache/wal/sequences
-
-# Added by LM Studio CLI (lms)
-export PATH="$PATH:/home/devanandpa/.lmstudio/bin"
-# End of LM Studio CLI section
-
-export PKG_CONFIG_PATH=/usr/lib/x86_64-linux-gnu/pkgconfig:$PKG_CONFIG_PATH
+#alias sudo=doas
+alias t='unbuffer lsd --tree | bat --pager "less -r"'

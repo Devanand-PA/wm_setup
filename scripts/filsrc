@@ -1,44 +1,60 @@
-#!/bin/sh
-menu="$(for j in $@; do echo $j; done | grep '^-m=' | awk -F '=' '{print $2}')"
-FILENAME="$(for j in "$@"; do echo $j; done | grep -v '^-m=')"
-[ "$menu" ] || menu="dmenu -l 30"
-if [ ! "$FILENAME" ]
-then
-FILENAME="$(find $HOME  -type f  | $menu -i)"
-#FILENAME="$(fzf --preview="timg {} -g100x100 || batcat {} --color=always")"
-#FILENAME="$(fzf --preview="fzf_previewable {}")"
-fi
-if [ "$FILENAME" ]
-then
-FILEEXTENTION="$(echo "$FILENAME" | awk -F '.' '{print $NF}')"
-DOCUMENT_VIEWER="okular"
-MEDIA_PLAYER="mpv"
-IMAGE_VIEWER="sxiv"
-OFFICE_SUITE="libreoffice"
-if [ "$menu" = "dmenu -l 30" ]
-then
-TEXT_EDITOR="st -e vi"
-else
-TEXT_EDITOR="vi"
-fi
+#!/bin/python
+import os
+import sys
+
+argtypes = tuple("-m=")
+try :
+    menu = [ i[3:]  for i in sys.argv[1:] if i.startswith("-m=")]
+    menu = menu[0]
+except :
+    menu = "dmenu -l 30"
+
+menu = list(menu.split(' '))
+
+try :
+    FILENAME = [ i for i in sys.argv[1:] if not i.startswith(argtypes)]
+except :
+    FILENAME = []
+
+
+
 GOOD_APP=""
-case $FILEEXTENTION in
-	xcf)
-		GOOD_APP="gimp" ;;
-	html)
-		GOOD_APP="surf" ;;
-	ods | odp )
-		GOOD_APP=$OFFICE_SUITE;;
-	pdf | djvu | ps | epub )
-		GOOD_APP=$DOCUMENT_VIEWER;;
-	png | jpg | webp )
-		GOOD_APP="$IMAGE_VIEWER" ;;
-	mp4 | m4a | m3u | webm | mp3 | opus | mkv | wav )
-		GOOD_APP="$MEDIA_PLAYER" ;;
-	*)
-		GOOD_APP="$TEXT_EDITOR" ;;
-esac
-OPTS=""
-#[ "$GOOD_APP" = "$DOCUMENT_VIEWER" ] && OPTS="--mode fullscreen"
-[ "$FILEEXTENTION" ] && $GOOD_APP "$FILENAME" $OPTS
-fi
+FILEEXTENTION = ""
+
+if menu == ["dmenu", "-l", "30"]  :
+    TEXT_EDITOR="st -e vi"
+else :
+    TEXT_EDITOR="vi"
+
+if FILENAME : 
+    try :
+        FILEEXTENTION = FILENAME[0].split('.')[-1]
+    except :
+        FILEEXTENTION = ""
+    DOCUMENT_VIEWER="okular"
+    MEDIA_PLAYER="mpv"
+    IMAGE_VIEWER="sxiv"
+    OFFICE_SUITE="libreoffice"
+    match FILEEXTENTION :
+
+        case "xcf" :
+            GOOD_APP="gimp" 
+        case "html" :
+            GOOD_APP="surf"
+        case "ods" | "odp" :
+            GOOD_APP=OFFICE_SUITE
+        case "pdf" | "djvu" | "ps" | "epub" :
+            GOOD_APP=DOCUMENT_VIEWER
+        case "png" | "jpg" | "webp" :
+            GOOD_APP=IMAGE_VIEWER 
+        case "mp4" | "m4a" | "m3u" | "webm" | "mp3" | "opus" | "mkv" | "wav" :
+            GOOD_APP=MEDIA_PLAYER
+        case _ :
+            GOOD_APP=TEXT_EDITOR
+
+    OPTS=[]
+    if OPTS :
+        FILENAME += OPTS
+    if FILEEXTENTION :
+        os.execvp(GOOD_APP, [GOOD_APP]+FILENAME)
+    
