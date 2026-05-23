@@ -5,7 +5,7 @@ import os
 import json
 
 filePath , data , bookNames , curr , realPath = "" , "" , "" , "" , ""
-document_viewer = [ "okular" ]
+document_viewer = [ "zathura" , "--mode" , "fullscreen" ]
 read_toggle = True
 def choose_book(Chosen) :
     global bookNames , curr , realPath , data , filePath
@@ -40,6 +40,7 @@ def user_action(Chosen):
             print("\033[33;1mq \033[0;1m-> \033[0;32;3mQuit\033[0m")
             print("\033[33;1ml \033[0;1m-> \033[0;32;3mList Books\033[0m")
             print("\033[33;1mc \033[0;1m-> \033[0;32;3mChoose Book\033[0m")
+            print("\033[33;1ms \033[0;1m-> \033[0;32;3mChoose Another Section\033[0m")
             response = input("You Choose :")
             if response == "n" :
                 pb = bookNames.index(curr)+1
@@ -59,12 +60,16 @@ def user_action(Chosen):
                     read_toggle = True
             elif response == "l" :
                 listprint(Chosen)
+            elif response == "s" :
+                readbook()
             elif response == "r" :
                 read_toggle = True
             elif response == "c" :
                 choose_book(Chosen)
             elif response == "q" :
                 quit()
+            else :
+                read_toggle = False
         except KeyboardInterrupt:
             print("")
             quit()
