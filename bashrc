@@ -32,31 +32,27 @@ shopt -s xpg_echo
 # [ "$quote_file" ] && cat $HOME/.scripts/quotes/$quote_file
 # quote_file=""
 # }
+
 searchquotes() {
     local quotes_dir="$HOME/.scripts/quotes"
 
     local selection
     selection=$(
+        cd "$quotes_dir" &&
         fzf \
             --disabled \
-            --delimiter $'\t' \
-            --with-nth 1 \
-            --bind "start:reload:rg -l '' \"$quotes_dir\" | awk '{n=split(\$0,a,\"/\"); print a[n]\"\t\"\$0}'" \
-            --bind "change:reload:rg -l --ignore-case {q} \"$quotes_dir\" | awk '{n=split(\$0,a,\"/\"); print a[n]\"\t\"\$0}' || true" \
-            --preview 'cat {2}' \
+            --bind 'start:reload:rg -l "" . | sed "s|^\./||" | sort -V' \
+            --bind 'change:reload:rg -l --ignore-case {q} . | sed "s|^\./||" | sort -V || true' \
+            --preview 'cat {}' \
             --preview-window=left,90%,wrap
     )
 
-    [ -n "$selection" ] || return
-
-    cat "$(printf '%s\n' "$selection" | cut -f2)"
+    [ -n "$selection" ] && cat "$quotes_dir/$selection"
 }
 
-
-
-searchpkg() {
-	apt search "$@"
-}
+# searchpkg() {
+# 	apt search "$@"
+# }
 
 quotes(){
 printf "\e[0;2;3m"
