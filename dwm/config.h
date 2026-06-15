@@ -89,7 +89,7 @@ static const Layout layouts[] = {
 
 /* helper for spawning shell commands in the pre dwm-5.0 fashion */
 #define SHCMD(cmd) { .v = (const char*[]){ "/bin/sh", "-c", cmd, NULL } }
-#define TERM "st"
+#define TERM "alacritty"
 /* commands */
 static char dmenumon[2] = "0"; /* component of dmenucmd, manipulated in spawn() */
 static const char *dmenucmd[] = { "dmenu_run", "-m", dmenumon,NULL };
@@ -111,7 +111,7 @@ static const Key keys[] = {
 	{ MODKEY,                       XK_space,			spawn,          {.v = dmenucmd } },
 	{ MODKEY|ControlMask,           XK_c,				spawn,          SHCMD("xclip -o | xclip -sel clip") },
 	{ MODKEY|ControlMask,           XK_l,				spawn,          SHCMD("brightnessctl set $(: | dmenu -p 'Set Brightness :')") },
-	{ MODKEY,	                XK_x, 				spawn,          {.v = (const char*[]){TERM, NULL} } },
+	{ MODKEY,	                XK_x, 				spawn,          {.v = (const char*[]){"alacritty", NULL} } },
 	{ MODKEY,	                XK_v, 				spawn,          {.v = (const char*[]){"pcmanfm", NULL} } },
 	{ MODKEY|Mod1Mask,              XK_x, 				spawn,          {.v = (const char*[]){"tabbed","-k","st","-w" , NULL} } },
 	{ MODKEY|ShiftMask,             XK_space, 			spawn,          {.v = (const char*[]){"rofi","-show","drun","-show-icons" , NULL} } },
@@ -136,7 +136,7 @@ static const Key keys[] = {
 	{ MODKEY,		        XK_p, 				spawn,          {.v = (const char*[]){"playsong",NULL} } },
 	{ Mod1Mask,		XK_Tab, 			spawn,          {.v = window_switcher_rofi} },
 	{ MODKEY,	                XK_b, 				spawn,          {.v = (const char*[]){"firefox","-P","Personal",NULL} } },
-	{ MODKEY,			XK_o, 				spawn,          SHCMD("cat ~/.xdg_open_history | dmenu -l 30 -i | xargs -I {} filsrc '{}' ") },
+	{ MODKEY,			XK_o, 				spawn,          SHCMD("cat ~/.common_commands | dmenu -i -l 30 | sh ") },
 	{ MODKEY|ShiftMask,		XK_o, 				spawn,          {.v = (const char*[]){"obs","--minimize-to-tray",NULL} } },
 	{ 0,		                XF86XK_MonBrightnessDown, 	spawn,		{.v = brightnesscmd[0] } },
 	{ 0,		                XF86XK_MonBrightnessUp, 	spawn,  	{.v = brightnesscmd[1] } },

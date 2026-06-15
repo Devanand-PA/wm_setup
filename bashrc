@@ -3,6 +3,7 @@
 # for examples
 # If not running interactively, don't do anything
 VENV_ACTIVE=false
+export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
 case $- in
     *i*) ;;
       *) return;;
@@ -19,18 +20,38 @@ PROMPT_COMMAND='printf "\033]0;%s\007" "${PWD/#$HOME/"~"}"'
 shopt -s autocd
 shopt -s xpg_echo
 ###########[ Functions ]#################
-searchquotes(){
- quote_to_search="$@"
- if [ "$quote_to_search" ]
- then
- quote_files="$(grep  "${quote_to_search}" -i $HOME/.scripts/quotes/* | awk -F ':' '{print $1}'| uniq )"
- else
-	quote_files="$(ls $HOME/.scripts/quotes/*)"
- fi
-quote_file="$(echo "$quote_files" | awk -F '/' '{print $NF}' | fzf --preview='cat ~/.scripts/quotes/{}' --preview-window=left,90%,wrap)"
-[ "$quote_file" ] && cat $HOME/.scripts/quotes/$quote_file
-quote_file=""
+# searchquotes(){
+#  quote_to_search="$@"
+#  if [ "$quote_to_search" ]
+#  then
+#  quote_files="$(grep  "${quote_to_search}" -i $HOME/.scripts/quotes/* | awk -F ':' '{print $1}'| uniq )"
+#  else
+# 	quote_files="$(ls $HOME/.scripts/quotes/*)"
+#  fi
+# quote_file="$(echo "$quote_files" | awk -F '/' '{print $NF}' | fzf --preview='cat ~/.scripts/quotes/{}' --preview-window=left,90%,wrap)"
+# [ "$quote_file" ] && cat $HOME/.scripts/quotes/$quote_file
+# quote_file=""
+# }
+searchquotes() {
+    local quotes_dir="$HOME/.scripts/quotes"
+
+    local selection
+    selection=$(
+        fzf \
+            --disabled \
+            --delimiter $'\t' \
+            --with-nth 1 \
+            --bind "start:reload:rg -l '' \"$quotes_dir\" | awk '{n=split(\$0,a,\"/\"); print a[n]\"\t\"\$0}'" \
+            --bind "change:reload:rg -l --ignore-case {q} \"$quotes_dir\" | awk '{n=split(\$0,a,\"/\"); print a[n]\"\t\"\$0}' || true" \
+            --preview 'cat {2}' \
+            --preview-window=left,90%,wrap
+    )
+
+    [ -n "$selection" ] || return
+
+    cat "$(printf '%s\n' "$selection" | cut -f2)"
 }
+
 
 
 searchpkg() {
@@ -55,6 +76,8 @@ else
 fi
 unset sel_file
 }
+
+
 
 #  NOTE : These functions are here for extra `cd` functionality in the interactive bash shell
 
@@ -165,7 +188,7 @@ alias pf='find $HOME ! -type d | fzf '
 #alias subplay='mpv --no-video  --player-operation-mode=pseudo-gui -fs --sub-pos=55  --no-resume-playback --cover-art-file=/usr/share/wallpapers/wal --vid=1'
 #alias sudo='sudo '
 #alias apt='nala'
-alias cal='ncal'
+#alias cal='ncal'
 alias ll='ls -lh'
 alias la='ls -lAh'
 alias lt='ll -t'
