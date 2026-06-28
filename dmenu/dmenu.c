@@ -839,6 +839,10 @@ usage(void)
 	    "             [-nb color] [-nf color] [-sb color] [-sf color] [-w windowid]");
 }
 
+
+
+
+
 int
 main(int argc, char *argv[])
 {

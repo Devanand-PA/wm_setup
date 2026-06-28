@@ -18,6 +18,7 @@ char bat_icon[100] = "[No Battery]";
 int en_full_max;
 int en_now_max;
 int bat_number;
+char status[20];
 Display *display = NULL;  // Persistent display connection
 
 #define POWER_SUPPLY_PATH "/sys/class/power_supply/"
@@ -39,6 +40,7 @@ int battery_functions() {
     en_now_max = 0;
     bat_number = -1;
     int highest_battery = -1;
+    int any_charging = 0;
 
     // Find highest existing battery
     for (int i = MAX_BATTERIES - 1; i >= 0; i--) {
@@ -50,6 +52,7 @@ int battery_functions() {
     }
 
     // Process all batteries but prioritize status from highest
+    int not_charging = 0;
     for (int i = 0; i < MAX_BATTERIES; i++) {
         int en_now_local = 0;
         int en_full_local = 0;
@@ -76,25 +79,33 @@ int battery_functions() {
         }
         fclose(file);
 
+	// Check charging state
+	snprintf(fileName, sizeof(fileName), "%sBAT%d/status",
+         POWER_SUPPLY_PATH, i);
+	file = fopen(fileName, "r");
+	if (file != NULL) {
+    		if (fscanf(file, "%19s", status) == 1) {
+        		if (strcmp(status, "Charging") == 0)
+            			any_charging = 1;
+        		if (strcmp(status, "Not Charging") == 0)
+            			++not_charging;
+    			}
+    		fclose(file);
+		}
+
         // Only add if both values were read successfully
         en_now_max += en_now_local;
         en_full_max += en_full_local;
         bat_number = i;  // Track last valid battery
     }
 
-    // Get status from highest battery
-    if (highest_battery >= 0) {
-        snprintf(fileName, sizeof(fileName), "%sBAT%d/status", POWER_SUPPLY_PATH, highest_battery);
-        file = fopen(fileName, "r");
-        if (file != NULL) {
-            if (fscanf(file, "%19s", charging_status) != 1) {
-                strcpy(charging_status, "Unknown");
-            }
-            fclose(file);
-        } else {
-            strcpy(charging_status, "Unknown");
-        }
-    }
+	if (any_charging)
+    		strcpy(charging_status, "Charging");
+	else if (not_charging == MAX_BATTERIES) {
+    		strcpy(charging_status, "Not Charging");
+	}
+	else
+    		strcpy(charging_status, "Discharging");
 
     if (en_full_max == 0) {
         strcpy(bat_icon, "[No Battery]");
@@ -117,13 +128,14 @@ int battery_functions() {
     size_t current_len = 1;  // Starts with '['
     size_t max_len = sizeof(temp_icon) - 1;
 
-    int bat_10 = (battery_percentage + 5) / 10;
-    if (bat_10 > 10) bat_10 = 10;
+    int bat_10 = (battery_percentage - 5) / 10;
+    if (bat_10 > 9) bat_10 = 9;
     if (bat_10 < 0) bat_10 = 0;
 
     // Add filled blocks
-    for (int i = 0; i < bat_10; i++) {
-        const char *block = BAT_ARRAY[i];
+    printf("bat10 is ,%d\n",bat_10);
+    for (int i = 0; i <= bat_10; i++) {
+        const char *block = BAT_ARRAY[bat_10];
         size_t block_len = strlen(block);
         
         if (current_len + block_len > max_len) break;
@@ -132,16 +144,24 @@ int battery_functions() {
     }
 
     // Add empty blocks
-    const char *empty_block = "⬛";
+    const char *empty_block = "🟪";
     size_t empty_len = strlen(empty_block);
-    for (int i = bat_10; i < 10; i++) {
+    for (int i = bat_10 + 1; i < 10; i++) {
         if (current_len + empty_len > max_len) break;
         strncat(temp_icon, empty_block, max_len - current_len);
         current_len += empty_len;
     }
 
     // Add status icon
-    const char *status_icon = (strcmp(charging_status, "Charging") == 0) ? "⚡" : "⏬";
+    // const char *status_icon = (strcmp(charging_status, "Charging") == 0) ? "⚡" : "⏬";
+	const char *status_icon = "💫";
+	
+	if (strcmp(charging_status, "Charging") == 0) {
+    		status_icon = "🔌";
+	} else if (strcmp(charging_status, "Not Charging") == 0) {
+    		status_icon = "❗";
+	}
+
     size_t status_len = strlen(status_icon);
     
     if (current_len + 1 + status_len <= max_len) {  // +1 for ']'
@@ -158,7 +178,7 @@ int update_titlebar() {
     // Time
     time(&rawtime);
     timeinfo = localtime(&rawtime);
-    strftime(time_buffer, sizeof(time_buffer), "%a %d %b %I:%M %p", timeinfo);
+    strftime(time_buffer, sizeof(time_buffer), "  %a %d %b %I:%M %p", timeinfo);
 
     // Update battery status
     battery_functions();
