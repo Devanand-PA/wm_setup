@@ -144,7 +144,7 @@ int battery_functions() {
     }
 
     // Add empty blocks
-    const char *empty_block = "🟪";
+    const char *empty_block = "🔳";
     size_t empty_len = strlen(empty_block);
     for (int i = bat_10 + 1; i < 10; i++) {
         if (current_len + empty_len > max_len) break;
