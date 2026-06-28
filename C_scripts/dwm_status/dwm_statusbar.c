@@ -123,7 +123,7 @@ int battery_functions() {
     if (battery_percentage < 0) battery_percentage = 0;
 
     // Battery icon construction with bounds checking
-    static const char *BAT_ARRAY[] = {"🟥","🟥","🟧","🟧","🟨","🟨","🟩","🟩","🟦","🟦"};
+    static const char *BAT_ARRAY[] = {"🟥","🟥","🟧","🟨","🟩","🟩","🟩","🟩","🟩","🟩"};
     char temp_icon[100] = "[";
     size_t current_len = 1;  // Starts with '['
     size_t max_len = sizeof(temp_icon) - 1;
@@ -139,7 +139,7 @@ int battery_functions() {
         size_t block_len = strlen(block);
         
         if (current_len + block_len > max_len) break;
-        strncat(temp_icon, block, max_len - current_len);
+       strncat(temp_icon, block, max_len - current_len);
         current_len += block_len;
     }
 
