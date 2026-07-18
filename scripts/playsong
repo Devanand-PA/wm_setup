@@ -82,7 +82,26 @@ elif (mode=="Play Playlist") :
     print(selected_playlist)
     # Now run `find` in selected_playlist and store it to a temporary file. Mpv will play from this temporary file so that it can shuffle properly
 
-    shuffled_playlist = subprocess.check_output(f'cat "{selected_playlist}" | xargs -I [] find  "[]" -type f | shuf',shell=True,text=True).rstrip()
+    #shuffled_playlist = subprocess.check_output(f'cat "{selected_playlist}" | xargs -I [] find  "[]" -type f | shuf',shell=True,text=True).rstrip()
+    with open(selected_playlist) as FILE :
+        all_songs =  [ i.rstrip() for i in FILE.readlines() ]
+    appendlist = []
+    for i in range(len(all_songs)-1,-1,-1) :
+        if os.path.isdir(all_songs[i]) :
+            appendlist += list(subprocess.check_output(["find",all_songs[i],"-type","f"],text=True).split('\n'))
+            del all_songs[i]
+    all_songs += appendlist
+
+    # Remove empty entries
+    for i in range(len(all_songs)-1,-1,-1) :
+        if not all_songs[i] :
+            del all_songs[i]
+
+    import random
+    random.shuffle(all_songs)
+    shuffled_playlist = "\n".join(all_songs)
+
+
     with tempfile.NamedTemporaryFile(mode='w+',delete=False,suffix=".txt") as tmp:
         
         tmp.write(shuffled_playlist)
