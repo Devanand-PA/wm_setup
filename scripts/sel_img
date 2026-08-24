@@ -1,201 +1,348 @@
-#!/bin/python3
-import subprocess
-import shutil
-import tkinter as tk
+#!/usr/bin/env python3
+"""
+Improved image selector with dynamic resizing, better layout, and modern features.
+Usage:
+    sel_img.py [directory...] [-r] [-t]
+    -r  : recursively search subdirectories
+    -t  : sort by modification time (newest first)
+"""
+
 import sys
-from tkinter import ttk
 import os
-from PIL import Image , ImageTk
-import json
-#====================================
-#======================================
-im_height = 1000
-im_width = 1000
+import argparse
+from pathlib import Path
+from tkinter import Tk, Frame, Listbox, Entry, Label, Scrollbar, StringVar
+from tkinter import BOTH, LEFT, RIGHT, TOP, BOTTOM, X, Y, END, SINGLE
+from PIL import Image, ImageTk
 
+# ─── Configuration ───────────────────────────────────────────────────────────
 
-DEFAULT_STYLES = {
-    "frame_style": {"background": "#2e3440"},
-    "listbox_style": {
-        "background": "#3b4252",
-        "foreground": "#d8dee9",
-        "selectbackground": "#88c0d0",
-        "selectforeground": "#2e3440",
-        "borderwidth": 0,
-        "highlightthickness": 0
-    },
-    "label_style": {
-        "background": "#2e3440",
-        "foreground": "#eceff4",
-        "font": ("sans-serif", 12)
-    },
-    "entry_style": {
-        "background": "#4c566a",
-        "foreground": "#d8dee9",
-        "insertbackground": "#d8dee9", # Cursor color
-        "borderwidth": 0,
-        "highlightthickness": 1,
-        "highlightbackground": "#3b4252",
-        "highlightcolor": "#88c0d0"
-    }
+SUPPORTED_EXTS = {'.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp', '.tiff', '.tif'}
+
+THEME = {
+    "bg_primary":   "#2e3440",
+    "bg_secondary": "#3b4252",
+    "bg_input":     "#4c566a",
+    "fg_text":      "#d8dee9",
+    "fg_bright":    "#eceff4",
+    "accent":       "#88c0d0",
+    "accent_fg":    "#2e3440",
 }
-#=========================================
-if os.path.isfile(os.path.expanduser('~/.config/Tkinter/style.json')) :
-    with open(os.path.expanduser('~/.config/Tkinter/style.json')) as FILE:
-        style = json.load(FILE)
-else :
-    style = DEFAULT_STYLES
-frame_style = style["frame_style"]
-listbox_style = style["listbox_style"]
-label_style = style["label_style"]
-#===========================================
 
-def set_focusup_to_listbox(event):
-    global listbox
-    listbox.focus_set()
-    curr_sel = listbox.curselection()[0]
-    listbox.selection_clear(0, tk.END)
-    if curr_sel == 0 :
-        listbox.select_set(tk.END)
-    else :
-        listbox.select_set(curr_sel-1)
+# ─── Main Application ────────────────────────────────────────────────────────
+
+class ImageSelector:
+    def __init__(self, root, image_paths):
+        self.root = root
+        self.all_images = image_paths
+        self.filtered_images = list(image_paths)
+        self.current_image_obj = None
+        self.photo_image = None
+        self._after_id = None
+        self._last_index = -1
+
+        self._setup_window()
+        self._build_ui()
+        self._bind_events()
+        self._populate_list()
+        self._select_and_show(0)
+        self.input.focus_set()
+
+    def _setup_window(self):
+        self.root.title("Image Selector")
+        self.root.configure(bg=THEME["bg_primary"])
+        self.root.attributes('-topmost', True)
+        try:
+            self.root.attributes('-type', 'dialog')
+        except Exception:
+            pass
+        sw = self.root.winfo_screenwidth()
+        sh = self.root.winfo_screenheight()
+        self.root.geometry(f"{sw - 100}x{sh - 100}+50+50")
+        self.root.minsize(600, 400)
+
+    def _build_ui(self):
+        self.main_frame = Frame(self.root, bg=THEME["bg_primary"])
+        self.main_frame.pack(fill=BOTH, expand=True, padx=10, pady=10)
+
+        # ── Left Panel ──
+        self.left_frame = Frame(self.main_frame, bg=THEME["bg_primary"], width=300)
+        self.left_frame.pack(side=LEFT, fill=BOTH, expand=False)
+        self.left_frame.pack_propagate(False)
+
+        self.search_var = StringVar()
+        self.search_var.trace_add("write", self._on_search)
+        self.input = Entry(
+            self.left_frame,
+            textvariable=self.search_var,
+            bg=THEME["bg_input"],
+            fg=THEME["fg_text"],
+            insertbackground=THEME["fg_text"],
+            highlightthickness=1,
+            highlightbackground=THEME["bg_secondary"],
+            highlightcolor=THEME["accent"],
+            relief="flat",
+            font=("sans-serif", 12)
+        )
+        self.input.pack(side=BOTTOM, fill=X, pady=(5, 0))
+
+        list_container = Frame(self.left_frame, bg=THEME["bg_primary"])
+        list_container.pack(side=TOP, fill=BOTH, expand=True)
+
+        scrollbar = Scrollbar(list_container, bg=THEME["bg_secondary"])
+        scrollbar.pack(side=RIGHT, fill=Y)
+
+        self.listbox = Listbox(
+            list_container,
+            selectmode=SINGLE,
+            bg=THEME["bg_secondary"],
+            fg=THEME["fg_text"],
+            selectbackground=THEME["accent"],
+            selectforeground=THEME["accent_fg"],
+            borderwidth=0,
+            highlightthickness=0,
+            font=("sans-serif", 11),
+            activestyle="none",
+            yscrollcommand=scrollbar.set
+        )
+        self.listbox.pack(side=LEFT, fill=BOTH, expand=True)
+        scrollbar.config(command=self.listbox.yview)
+
+        # ── Right Panel ──
+        self.right_frame = Frame(self.main_frame, bg=THEME["bg_primary"])
+        self.right_frame.pack(side=LEFT, fill=BOTH, expand=True, padx=(10, 0))
+
+        self.filename_label = Label(
+            self.right_frame,
+            bg=THEME["bg_primary"],
+            fg=THEME["fg_bright"],
+            font=("sans-serif", 12, "bold"),
+            anchor="w"
+        )
+        self.filename_label.pack(side=TOP, fill=X, pady=(0, 5))
+
+        self.image_container = Frame(self.right_frame, bg=THEME["bg_secondary"])
+        self.image_container.pack(fill=BOTH, expand=True)
+
+        self.image_label = Label(
+            self.image_container,
+            bg=THEME["bg_secondary"]
+        )
+        self.image_label.place(relx=0.5, rely=0.5, anchor="center")
+
+        self.status_label = Label(
+            self.right_frame,
+            bg=THEME["bg_primary"],
+            fg=THEME["fg_text"],
+            font=("sans-serif", 10),
+            anchor="e"
+        )
+        self.status_label.pack(side=BOTTOM, fill=X, pady=(5, 0))
+
+    def _bind_events(self):
+        # Mouse selection
+        self.listbox.bind("<<ListboxSelect>>", self._on_list_select)
+        self.listbox.bind("<Double-Button-1>", self._on_confirm)
+
+        # Up/Down — bound on BOTH input and listbox so they always work
+        for widget in (self.input, self.listbox):
+            widget.bind("<Up>", self._focus_list_up)
+            widget.bind("<Down>", self._focus_list_down)
+
+        # Confirm / Cancel
+        self.input.bind("<Return>", self._on_confirm)
+        self.input.bind("<Escape>", self._on_cancel)
+        self.listbox.bind("<Return>", self._on_confirm)
+        self.listbox.bind("<Escape>", self._on_cancel)
+
+        # Typing in listbox → refocus search
+        self.listbox.bind("<Key>", self._refocus_input)
+
+        # Mouse wheel
+        self.listbox.bind("<MouseWheel>", self._on_mousewheel)
+        self.root.bind("<MouseWheel>", self._on_mousewheel)
+
+        # Resize
+        self.image_container.bind("<Configure>", self._on_container_resize)
+
+    def _populate_list(self):
+        self.listbox.delete(0, END)
+        for path in self.filtered_images:
+            self.listbox.insert(END, os.path.basename(path))
+        if self.filtered_images:
+            self.listbox.select_set(0)
+
+    def _on_search(self, *args):
+        query = self.search_var.get().lower().strip()
+        terms = query.split() if query else []
+
+        self.filtered_images = [
+            path for path in self.all_images
+            if not terms or all(term in os.path.basename(path).lower() for term in terms)
+        ]
+
+        self._populate_list()
+        if self.filtered_images:
+            self._select_and_show(0)
+        else:
+            self._last_index = -1
+            self.filename_label.config(text="No matches")
+            self.image_label.config(image="")
+            self.status_label.config(text="0 images")
+
+    def _on_list_select(self, event=None):
+        """Handle mouse clicks on the listbox."""
+        sel = self.listbox.curselection()
+        if sel:
+            self._show_image(sel[0])
+
+    def _select_and_show(self, index):
+        """Programmatically select an index and show its image."""
+        if not self.filtered_images:
+            return
+        index = max(0, min(index, len(self.filtered_images) - 1))
+        if index == self._last_index:
+            return
+        self.listbox.selection_clear(0, END)
+        self.listbox.select_set(index)
+        self.listbox.see(index)
+        self._show_image(index)
+
+    def _show_image(self, index):
+        if not self.filtered_images or index < 0 or index >= len(self.filtered_images):
+            return
+        self._last_index = index
+        path = self.filtered_images[index]
+        self.filename_label.config(text=os.path.basename(path))
+
+        try:
+            self.current_image_obj = Image.open(path)
+            self._resize_and_display()
+            w, h = self.current_image_obj.size
+            size_kb = os.path.getsize(path) / 1024
+            self.status_label.config(
+                text=f"{w}×{h}  |  {size_kb:.1f} KB  |  {index + 1} / {len(self.filtered_images)}"
+            )
+        except Exception as e:
+            self.status_label.config(text=f"Error: {e}")
+
+    def _resize_and_display(self):
+        if self.current_image_obj is None:
+            return
+        cw = max(self.image_container.winfo_width() - 20, 50)
+        ch = max(self.image_container.winfo_height() - 20, 50)
+        if cw <= 1 or ch <= 1:
+            self.root.after(100, self._resize_and_display)
+            return
+
+        img_w, img_h = self.current_image_obj.size
+        ratio = min(cw / img_w, ch / img_h, 1.0)
+        new_w = int(img_w * ratio)
+        new_h = int(img_h * ratio)
+
+        resized = self.current_image_obj.resize((new_w, new_h), Image.LANCZOS)
+        self.photo_image = ImageTk.PhotoImage(resized)
+        self.image_label.config(image=self.photo_image)
+        self.image_label.image = self.photo_image
+
+    def _on_container_resize(self, event=None):
+        if self._after_id:
+            self.root.after_cancel(self._after_id)
+        self._after_id = self.root.after(150, self._resize_and_display)
+
+    def _focus_list_up(self, event=None):
+        if self.listbox.size() == 0:
+            return "break"
+        self.listbox.focus_set()
+        curr = self.listbox.curselection()
+        idx = curr[0] if curr else 0
+        new_idx = (idx - 1) % self.listbox.size()
+        self._select_and_show(new_idx)
+        return "break"
+
+    def _focus_list_down(self, event=None):
+        if self.listbox.size() == 0:
+            return "break"
+        self.listbox.focus_set()
+        curr = self.listbox.curselection()
+        idx = curr[0] if curr else 0
+        new_idx = (idx + 1) % self.listbox.size()
+        self._select_and_show(new_idx)
+        return "break"
+
+    def _refocus_input(self, event=None):
+        """If user types a printable char while listbox is focused, move it to search."""
+        if event and len(event.char) == 1 and event.char.isprintable():
+            self.search_var.set(self.search_var.get() + event.char)
+            self.input.focus_set()
+            self.input.icursor(END)
+            return "break"
+
+    def _on_mousewheel(self, event=None):
+        if event and self.listbox.winfo_exists():
+            self.listbox.yview_scroll(int(-1 * (event.delta / 120)), "units")
+
+    def _on_confirm(self, event=None):
+        sel = self.listbox.curselection()
+        if sel and self.filtered_images:
+            self.selected = self.filtered_images[sel[0]]
+            self.root.quit()
+
+    def _on_cancel(self, event=None):
+        self.selected = None
+        self.root.quit()
 
 
-def set_focusdown_to_listbox(event):
-    global listbox
-    listbox.focus_set()
-    curr_sel = listbox.curselection()[0]
-    listbox.selection_clear(0, tk.END)
-    if curr_sel == int(listbox.size())-1 :
-        listbox.select_set(0)
-    else :
-        listbox.selection_clear(0, tk.END)
-        listbox.select_set(curr_sel+1)
+# ─── Helpers ─────────────────────────────────────────────────────────────────
 
-def set_focus_to_inputbar(event):
-    global inputbar
-    inputbar.focus_set()
-    on_select(1)
+def collect_images(paths, recursive=False, sort_time=False):
+    images = []
+    seen = set()
+    for path in paths:
+        p = Path(path).expanduser().resolve()
+        if p.is_dir():
+            pattern = "**/*" if recursive else "*"
+            files = p.glob(pattern)
+            files = sorted(files, key=lambda x: x.stat().st_mtime, reverse=True) if sort_time else sorted(files)
+            for f in files:
+                if f.suffix.lower() in SUPPORTED_EXTS and f not in seen:
+                    images.append(str(f))
+                    seen.add(f)
+        elif p.is_file() and p.suffix.lower() in SUPPORTED_EXTS and str(p) not in seen:
+            images.append(str(p))
+            seen.add(str(p))
+    return images
 
-def FILL_LISTBOX(LIST_ITEMS):
-    global listbox
-    listbox.delete(0, tk.END)
-    for item in LIST_ITEMS:
-        listbox.insert(tk.END,str(item))
-    listbox.select_set(0)
 
-def on_entry_change(event):
-    global DIRS
-    global inputbar
-    LIST_ITEMS = []
-    searchTERMS = list(searchquery.get().lower().split())
-    if searchTERMS :
-        for i in DIRS :
-            for j in searchTERMS :
-                if i not in LIST_ITEMS : 
-                    if  j in i.lower()  :
-                        LIST_ITEMS.append(i)
+def parse_args():
+    parser = argparse.ArgumentParser(description="Interactive image selector")
+    parser.add_argument("paths", nargs="*", default=["."], help="Directories or files to browse")
+    parser.add_argument("-r", "--recursive", action="store_true", help="Search recursively")
+    parser.add_argument("-t", "--time", action="store_true", help="Sort by modification time (newest first)")
+    return parser.parse_args()
+
+
+# ─── Entry Point ─────────────────────────────────────────────────────────────
+
+def main():
+    args = parse_args()
+    paths = args.paths if args.paths else ["."]
+    images = collect_images(paths, recursive=args.recursive, sort_time=args.time)
+
+    if not images:
+        print("No images found.", file=sys.stderr)
+        sys.exit(1)
+
+    root = Tk()
+    app = ImageSelector(root, images)
+    root.mainloop()
+
+    if hasattr(app, 'selected') and app.selected:
+        print(app.selected)
+        sys.exit(0)
     else:
-        for i in DIRS:
-            LIST_ITEMS.append(i)
-    FILL_LISTBOX(LIST_ITEMS)
-    on_select(1)
-
-def on_select(event):
-    global im_width
-    global im_height
-    selected_item = listbox.get(listbox.curselection())
-    selection_label.config(text=selected_item)
-    # Load a new image
-    selected_image = Image.open(selected_item)
-    selected_image.thumbnail((im_width,im_height))
-    new_image = ImageTk.PhotoImage(selected_image)
-    # Configure the label to display the new image
-    label.configure(image=new_image)
-    # Update the reference to the new image to avoid garbage collection
-    label.image = new_image
-    index = listbox.curselection()
-    if index:
-        listbox.see(index)
-
-def on_enter(event):
-    selected_item = listbox.get(listbox.curselection())
-    selected_image = selected_item
-    root.quit()
-    print(selected_image)
-
-def on_esc(event):
-    root.quit()
-    quit()
-#=========================================
-ARGS = sys.argv[1:]
-
-DIRS = []
-
-## Argparsing
-if "-r" in ARGS :
-    a = list(subprocess.getoutput(["find","-type","d"]).split('\n'))
-    ARGS = ARGS + a
-if not ARGS :
-    ARGS = [ os.getcwd() ]
-for i in ARGS:
-    if os.path.isdir(i):
-        if "-t" in ARGS :
-            IMAGE_LIST = subprocess.check_output(['ls','-t',i],text=True)
-            #print(IMAGE_LIST)
-            IMAGE_LIST = IMAGE_LIST.split('\n')
-            #print(IMAGE_LIST)
-        else :
-            IMAGE_LIST = os.listdir(i)
-        for j in IMAGE_LIST:
-            filetype = list(j.split('.'))[-1]
-            if filetype == "png" or filetype == "jpg" :
-                DIRS.append(os.path.join(i,j))
-###
-if not DIRS :
-    print("No Images found in directory")
-    quit()
-
-LIST_ITEMS = DIRS
-root = tk.Tk()
-scr_width = root.winfo_screenwidth()
-scr_height = root.winfo_screenheight()
-root.attributes('-topmost',True)
-root.attributes('-type', 'dialog')
-root.geometry(str(scr_width-50)+"x"+str(scr_height-50))
-frame = tk.Frame(root, **frame_style)
-frame.pack(fill=tk.BOTH,expand=True)
-
-leftframe = tk.Frame(frame, **frame_style)
-leftframe.pack(side=tk.LEFT,fill=tk.BOTH,expand=True)
-searchquery = tk.StringVar()
-inputbar = tk.Entry(leftframe,textvariable=searchquery)
-inputbar.pack(side=tk.BOTTOM,anchor=tk.SW,fill=tk.X,expand=False)
-term_width = shutil.get_terminal_size().columns
-listbox = tk.Listbox(leftframe, **listbox_style)
-listbox.pack(side=tk.TOP,fill=tk.BOTH,expand=True)
-selection_label = tk.Label(frame,text=os.path.basename(LIST_ITEMS[0]), **label_style,wraplength=1000)
-selection_label.pack()
-image = Image.open(LIST_ITEMS[0])
-image.thumbnail((im_width,im_height))
-image = ImageTk.PhotoImage(image)
+        sys.exit(1)
 
 
-label = tk.Label(frame,image=image)
-
-label.pack(side=tk.RIGHT)
-
-FILL_LISTBOX(LIST_ITEMS)
-
-listbox.bind("<<ListboxSelect>>", on_select)
-inputbar.focus_set()
-
-inputbar.bind("<KeyRelease>", on_entry_change)
-listbox.bind("<KeyRelease>", set_focus_to_inputbar)
-inputbar.bind("<Up>",set_focusup_to_listbox)
-inputbar.bind("<Down>",set_focusdown_to_listbox)
-inputbar.bind("<Return>",on_enter)
-listbox.bind("<Return>",on_enter)
-listbox.bind("<Escape>",on_esc)
-inputbar.bind("<Escape>",on_esc)
-
-root.mainloop()
+if __name__ == "__main__":
+    main()
