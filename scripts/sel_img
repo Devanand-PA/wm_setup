@@ -6,6 +6,11 @@ Usage:
     sel_img.py [directory...] [-r] [-t]
     -r  : recursively search subdirectories
     -t  : sort by modification time (newest first)
+
+Dmenu mode:
+    sel_img.py --dmenu-mode --list-file FILE --image-file FILE
+    sel_img.py --dmenu-mode --list-entries "a\nb" --image-entries "1.png\n2.png"
+    --return-label  : output the label instead of the image path (dmenu only)
 """
 
 import sys
@@ -56,10 +61,16 @@ def _load_thumbnail(path: str, max_w: int, max_h: int) -> ImageTk.PhotoImage:
 # ─── Main Application ────────────────────────────────────────────────────────
 
 class ImageSelector:
-    def __init__(self, root, image_paths):
+    def __init__(self, root, image_paths, display_labels=None):
         self.root = root
-        self.all_images = list(image_paths)
-        self.filtered_images = list(image_paths)
+        # Build list of (label, path) tuples
+        if display_labels is None:
+            self.all_items = [(os.path.basename(p), p) for p in image_paths]
+        else:
+            if len(display_labels) != len(image_paths):
+                raise ValueError("display_labels and image_paths must have same length")
+            self.all_items = list(zip(display_labels, image_paths))
+        self.filtered_items = self.all_items.copy()
         self._pending_future = None
         self._executor = ThreadPoolExecutor(max_workers=MAX_WORKERS)
         self._preload_queue = deque(maxlen=PRELOAD_AHEAD * 2 + 1)
@@ -68,12 +79,15 @@ class ImageSelector:
         self._scan_thread = None
         self._scan_done = threading.Event()
         self._scan_done.set()
+        # Store both selected path and label
+        self.selected_path = None
+        self.selected_label = None
 
         self._setup_window()
         self._build_ui()
         self._bind_events()
         self._populate_list()
-        if self.filtered_images:
+        if self.filtered_items:
             self._select_and_show(0)
         self.input.focus_set()
 
@@ -203,17 +217,18 @@ class ImageSelector:
 
     def _populate_list(self):
         self.listbox.delete(0, END)
-        for path in self.filtered_images:
-            self.listbox.insert(END, os.path.basename(path))
-        if self.filtered_images:
+        for label, _ in self.filtered_items:
+            self.listbox.insert(END, label)
+        if self.filtered_items:
             self.listbox.select_set(0)
 
     def _append_to_list(self, path):
         """Thread-safe append for lazy scanning."""
-        self.filtered_images.append(path)
-        self.all_images.append(path)
-        idx = len(self.filtered_images) - 1
-        self.listbox.insert(END, os.path.basename(path))
+        label = os.path.basename(path)
+        self.all_items.append((label, path))
+        self.filtered_items.append((label, path))
+        idx = len(self.filtered_items) - 1
+        self.listbox.insert(END, label)
         if idx == 0:
             self.listbox.select_set(0)
             self._select_and_show(0)
@@ -224,21 +239,20 @@ class ImageSelector:
         query = self.search_var.get().lower().strip()
         terms = query.split() if query else []
 
-        self.filtered_images = [
-            path for path in self.all_images
-            if not terms or all(term in os.path.basename(path).lower() for term in terms)
+        self.filtered_items = [
+            item for item in self.all_items
+            if not terms or all(term in item[0].lower() for term in terms)
         ]
 
         self._populate_list()
-        if self.filtered_images:
-            # Force update even if the new first item is at index 0
+        if self.filtered_items:
             self._last_index = -1
             self._select_and_show(0)
         else:
             self._last_index = -1
             self.filename_label.config(text="No matches")
             self.image_label.config(image="", text="No matches")
-            self.status_label.config(text="0 images")
+            self.status_label.config(text="0 items")
 
     # ── Selection & Display ──────────────────────────────────────────────────
 
@@ -249,9 +263,9 @@ class ImageSelector:
         self._refocus_entry()
 
     def _select_and_show(self, index):
-        if not self.filtered_images:
+        if not self.filtered_items:
             return
-        index = max(0, min(index, len(self.filtered_images) - 1))
+        index = max(0, min(index, len(self.filtered_items) - 1))
         if index == self._last_index:
             return
 
@@ -260,10 +274,10 @@ class ImageSelector:
         self.listbox.see(index)
 
         self._last_index = index
-        path = self.filtered_images[index]
-        self.filename_label.config(text=os.path.basename(path))
+        label, path = self.filtered_items[index]
+        self.filename_label.config(text=label)
         self.image_label.config(image="", text="Loading...")
-        self.status_label.config(text=f"Loading...  |  {index + 1} / {len(self.filtered_images)}")
+        self.status_label.config(text=f"Loading...  |  {index + 1} / {len(self.filtered_items)}")
 
         # Cancel any pending load
         if self._pending_future and not self._pending_future.done():
@@ -312,7 +326,7 @@ class ImageSelector:
             self.image_label.config(image=photo, text="")
             self.image_label.image = photo
             self.status_label.config(
-                text=f"{w}×{h}  |  {size_kb:.1f} KB  |  {expected_index + 1} / {len(self.filtered_images)}"
+                text=f"{w}×{h}  |  {size_kb:.1f} KB  |  {expected_index + 1} / {len(self.filtered_items)}"
             )
         except Exception as e:
             self.status_label.config(text=f"Error: {e}")
@@ -322,8 +336,8 @@ class ImageSelector:
             if offset == 0:
                 continue
             idx = center_index + offset
-            if 0 <= idx < len(self.filtered_images):
-                path = self.filtered_images[idx]
+            if 0 <= idx < len(self.filtered_items):
+                _, path = self.filtered_items[idx]
                 cw = max(self.image_container.winfo_width() - 20, 50)
                 ch = max(self.image_container.winfo_height() - 20, 50)
                 self._executor.submit(_load_thumbnail, path, cw, ch)
@@ -334,7 +348,7 @@ class ImageSelector:
         self._after_id = self.root.after(150, self._on_resize_done)
 
     def _on_resize_done(self):
-        if self._last_index >= 0 and self.filtered_images:
+        if self._last_index >= 0 and self.filtered_items:
             self._select_and_show(self._last_index)
 
     # ── Navigation (keeps focus on Entry) ──────────────────────────────────
@@ -370,13 +384,16 @@ class ImageSelector:
 
     def _on_confirm(self, event=None):
         sel = self.listbox.curselection()
-        if sel and self.filtered_images:
-            self.selected = self.filtered_images[sel[0]]
+        if sel and self.filtered_items:
+            label, path = self.filtered_items[sel[0]]
+            self.selected_label = label
+            self.selected_path = path
             self._shutdown()
             self.root.quit()
 
     def _on_cancel(self, event=None):
-        self.selected = None
+        self.selected_path = None
+        self.selected_label = None
         self._shutdown()
         self.root.quit()
 
@@ -444,6 +461,15 @@ def parse_args():
     parser.add_argument("-r", "--recursive", action="store_true", help="Search recursively")
     parser.add_argument("-t", "--time", action="store_true", help="Sort by modification time (newest first)")
     parser.add_argument("--lazy", action="store_true", help="Lazy scan: show UI immediately, populate as files are found")
+
+    # Dmenu mode arguments
+    parser.add_argument("--dmenu-mode", action="store_true", help="Enable dmenu mode (list entries + image paths)")
+    parser.add_argument("--list-file", help="File containing newline-separated list entries")
+    parser.add_argument("--list-entries", help="Newline-separated list entries (as a string)")
+    parser.add_argument("--image-file", help="File containing newline-separated image file paths")
+    parser.add_argument("--image-entries", help="Newline-separated image file paths (as a string)")
+    # NEW: option to return label instead of path
+    parser.add_argument("--return-label", action="store_true", help="In dmenu mode, output the selected list label instead of the image path")
     return parser.parse_args()
 
 
@@ -451,15 +477,69 @@ def parse_args():
 
 def main():
     args = parse_args()
-    paths = args.paths if args.paths else ["."]
 
+    # Dmenu mode
+    if args.dmenu_mode:
+        # Read list entries
+        if args.list_file and args.list_entries:
+            print("Error: both --list-file and --list-entries provided.", file=sys.stderr)
+            sys.exit(1)
+        if args.list_file:
+            try:
+                with open(args.list_file, 'r') as f:
+                    list_entries = [line.rstrip('\n') for line in f]
+            except Exception as e:
+                print(f"Error reading list file: {e}", file=sys.stderr)
+                sys.exit(1)
+        elif args.list_entries:
+            list_entries = args.list_entries.split('\n')
+        else:
+            print("Error: must provide either --list-file or --list-entries", file=sys.stderr)
+            sys.exit(1)
+
+        # Read image entries
+        if args.image_file and args.image_entries:
+            print("Error: both --image-file and --image-entries provided.", file=sys.stderr)
+            sys.exit(1)
+        if args.image_file:
+            try:
+                with open(args.image_file, 'r') as f:
+                    image_entries = [line.rstrip('\n') for line in f]
+            except Exception as e:
+                print(f"Error reading image file: {e}", file=sys.stderr)
+                sys.exit(1)
+        elif args.image_entries:
+            image_entries = args.image_entries.split('\n')
+        else:
+            print("Error: must provide either --image-file or --image-entries", file=sys.stderr)
+            sys.exit(1)
+
+        if len(list_entries) != len(image_entries):
+            print(f"Error: number of list entries ({len(list_entries)}) and image entries ({len(image_entries)}) do not match", file=sys.stderr)
+            sys.exit(1)
+
+        root = Tk()
+        app = ImageSelector(root, image_entries, display_labels=list_entries)
+        root.mainloop()
+
+        if app.selected_path is not None:
+            # Decide what to output
+            if args.return_label:
+                print(app.selected_label)
+            else:
+                print(app.selected_path)
+            sys.exit(0)
+        else:
+            sys.exit(1)
+
+    # Normal mode
     if args.lazy:
         root = Tk()
         app = ImageSelector(root, [])
-        app.start_lazy_scan(paths, recursive=args.recursive, sort_time=args.time)
+        app.start_lazy_scan(args.paths, recursive=args.recursive, sort_time=args.time)
         root.mainloop()
     else:
-        images = collect_images(paths, recursive=args.recursive, sort_time=args.time)
+        images = collect_images(args.paths, recursive=args.recursive, sort_time=args.time)
         if not images:
             print("No images found.", file=sys.stderr)
             sys.exit(1)
@@ -468,8 +548,9 @@ def main():
         app = ImageSelector(root, images)
         root.mainloop()
 
-    if hasattr(app, 'selected') and app.selected:
-        print(app.selected)
+    if app.selected_path is not None:
+        # In normal mode we always output the path
+        print(app.selected_path)
         sys.exit(0)
     else:
         sys.exit(1)
