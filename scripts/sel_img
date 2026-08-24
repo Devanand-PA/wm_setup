@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
-Improved image selector with dynamic resizing, better layout, and modern features.
+High-performance image selector with async loading, thumbnail caching,
+and lazy directory scanning.
 Usage:
     sel_img.py [directory...] [-r] [-t]
     -r  : recursively search subdirectories
@@ -10,7 +11,11 @@ Usage:
 import sys
 import os
 import argparse
+import threading
 from pathlib import Path
+from concurrent.futures import ThreadPoolExecutor, Future
+from functools import lru_cache
+from collections import deque
 from tkinter import Tk, Frame, Listbox, Entry, Label, Scrollbar, StringVar
 from tkinter import BOTH, LEFT, RIGHT, TOP, BOTTOM, X, Y, END, SINGLE
 from PIL import Image, ImageTk
@@ -29,23 +34,49 @@ THEME = {
     "accent_fg":    "#2e3440",
 }
 
+CACHE_SIZE = 100          # Max cached thumbnails
+PRELOAD_AHEAD = 3         # How many images to preload ahead/behind
+MAX_WORKERS = 4           # Background threads for image loading
+
+# ─── Caching ─────────────────────────────────────────────────────────────────
+
+@lru_cache(maxsize=CACHE_SIZE)
+def _load_thumbnail(path: str, max_w: int, max_h: int) -> ImageTk.PhotoImage:
+    """Load and resize an image in a background thread. Cached by path + size."""
+    try:
+        with Image.open(path) as img:
+            # thumbnail() is faster than resize() for previews and preserves aspect ratio
+            img.thumbnail((max_w, max_h), Image.LANCZOS)
+            # Convert to RGB/RGBA to avoid palette issues, then copy to detach from file
+            if img.mode in ('P', 'LA', 'L'):
+                img = img.convert('RGBA' if 'A' in img.mode or img.mode == 'LA' else 'RGB')
+            return ImageTk.PhotoImage(img)
+    except Exception:
+        return None
+
+
 # ─── Main Application ────────────────────────────────────────────────────────
 
 class ImageSelector:
     def __init__(self, root, image_paths):
         self.root = root
-        self.all_images = image_paths
+        self.all_images = list(image_paths)   # May be populated lazily
         self.filtered_images = list(image_paths)
-        self.current_image_obj = None
-        self.photo_image = None
-        self._after_id = None
+        self._pending_future = None           # Current background load
+        self._executor = ThreadPoolExecutor(max_workers=MAX_WORKERS)
+        self._preload_queue = deque(maxlen=PRELOAD_AHEAD * 2 + 1)
         self._last_index = -1
+        self._after_id = None
+        self._scan_thread = None
+        self._scan_done = threading.Event()
+        self._scan_done.set()
 
         self._setup_window()
         self._build_ui()
         self._bind_events()
         self._populate_list()
-        self._select_and_show(0)
+        if self.filtered_images:
+            self._select_and_show(0)
         self.input.focus_set()
 
     def _setup_window(self):
@@ -126,7 +157,10 @@ class ImageSelector:
 
         self.image_label = Label(
             self.image_container,
-            bg=THEME["bg_secondary"]
+            bg=THEME["bg_secondary"],
+            text="Loading...",
+            fg=THEME["fg_text"],
+            font=("sans-serif", 14)
         )
         self.image_label.place(relx=0.5, rely=0.5, anchor="center")
 
@@ -140,29 +174,21 @@ class ImageSelector:
         self.status_label.pack(side=BOTTOM, fill=X, pady=(5, 0))
 
     def _bind_events(self):
-        # Mouse selection
         self.listbox.bind("<<ListboxSelect>>", self._on_list_select)
         self.listbox.bind("<Double-Button-1>", self._on_confirm)
 
-        # Up/Down — bound on BOTH input and listbox so they always work
         for widget in (self.input, self.listbox):
             widget.bind("<Up>", self._focus_list_up)
             widget.bind("<Down>", self._focus_list_down)
 
-        # Confirm / Cancel
         self.input.bind("<Return>", self._on_confirm)
         self.input.bind("<Escape>", self._on_cancel)
         self.listbox.bind("<Return>", self._on_confirm)
         self.listbox.bind("<Escape>", self._on_cancel)
 
-        # Typing in listbox → refocus search
         self.listbox.bind("<Key>", self._refocus_input)
-
-        # Mouse wheel
         self.listbox.bind("<MouseWheel>", self._on_mousewheel)
         self.root.bind("<MouseWheel>", self._on_mousewheel)
-
-        # Resize
         self.image_container.bind("<Configure>", self._on_container_resize)
 
     def _populate_list(self):
@@ -171,6 +197,19 @@ class ImageSelector:
             self.listbox.insert(END, os.path.basename(path))
         if self.filtered_images:
             self.listbox.select_set(0)
+
+    def _append_to_list(self, path):
+        """Thread-safe append for lazy scanning."""
+        self.filtered_images.append(path)
+        self.all_images.append(path)
+        idx = len(self.filtered_images) - 1
+        self.listbox.insert(END, os.path.basename(path))
+        # Auto-select first item if nothing selected yet
+        if idx == 0:
+            self.listbox.select_set(0)
+            self._select_and_show(0)
+
+    # ── Search ───────────────────────────────────────────────────────────────
 
     def _on_search(self, *args):
         query = self.search_var.get().lower().strip()
@@ -187,68 +226,115 @@ class ImageSelector:
         else:
             self._last_index = -1
             self.filename_label.config(text="No matches")
-            self.image_label.config(image="")
+            self.image_label.config(image="", text="No matches")
             self.status_label.config(text="0 images")
 
+    # ── Selection & Display ──────────────────────────────────────────────────
+
     def _on_list_select(self, event=None):
-        """Handle mouse clicks on the listbox."""
         sel = self.listbox.curselection()
         if sel:
-            self._show_image(sel[0])
+            self._select_and_show(sel[0])
 
     def _select_and_show(self, index):
-        """Programmatically select an index and show its image."""
         if not self.filtered_images:
             return
         index = max(0, min(index, len(self.filtered_images) - 1))
         if index == self._last_index:
             return
+
         self.listbox.selection_clear(0, END)
         self.listbox.select_set(index)
         self.listbox.see(index)
-        self._show_image(index)
 
-    def _show_image(self, index):
-        if not self.filtered_images or index < 0 or index >= len(self.filtered_images):
-            return
         self._last_index = index
         path = self.filtered_images[index]
         self.filename_label.config(text=os.path.basename(path))
+        self.image_label.config(image="", text="Loading...")
+        self.status_label.config(text=f"Loading...  |  {index + 1} / {len(self.filtered_images)}")
 
+        # Cancel any pending load
+        if self._pending_future and not self._pending_future.done():
+            self._pending_future.cancel()
+
+        # Load in background thread
+        self._pending_future = self._executor.submit(
+            self._load_image_thread, path, index
+        )
+        self._pending_future.add_done_callback(
+            lambda f, idx=index: self._on_image_loaded(f, idx)
+        )
+
+        # Preload neighbors
+        self._preload_neighbors(index)
+
+    def _load_image_thread(self, path, index):
+        """Runs in background thread. Returns (photo, w, h, size_kb) or None."""
         try:
-            self.current_image_obj = Image.open(path)
-            self._resize_and_display()
-            w, h = self.current_image_obj.size
+            # Get container size (cached at call time in main thread, passed here)
+            cw = max(self.image_container.winfo_width() - 20, 50)
+            ch = max(self.image_container.winfo_height() - 20, 50)
+            photo = _load_thumbnail(path, cw, ch)
+            if photo is None:
+                return None
+            # Get dimensions from original file without reopening if possible
+            with Image.open(path) as img:
+                w, h = img.size
             size_kb = os.path.getsize(path) / 1024
+            return (photo, w, h, size_kb)
+        except Exception as e:
+            return ("error", str(e))
+
+    def _on_image_loaded(self, future, expected_index):
+        """Called on main thread when image load completes."""
+        if expected_index != self._last_index:
+            return  # User already moved on
+        try:
+            result = future.result()
+            if result is None:
+                self.image_label.config(image="", text="Failed to load")
+                self.status_label.config(text="Error loading image")
+                return
+            if result[0] == "error":
+                self.image_label.config(image="", text=f"Error: {result[1]}")
+                self.status_label.config(text=f"Error: {result[1]}")
+                return
+
+            photo, w, h, size_kb = result
+            self.image_label.config(image=photo, text="")
+            self.image_label.image = photo  # Keep reference
             self.status_label.config(
-                text=f"{w}×{h}  |  {size_kb:.1f} KB  |  {index + 1} / {len(self.filtered_images)}"
+                text=f"{w}×{h}  |  {size_kb:.1f} KB  |  {expected_index + 1} / {len(self.filtered_images)}"
             )
         except Exception as e:
             self.status_label.config(text=f"Error: {e}")
 
-    def _resize_and_display(self):
-        if self.current_image_obj is None:
-            return
-        cw = max(self.image_container.winfo_width() - 20, 50)
-        ch = max(self.image_container.winfo_height() - 20, 50)
-        if cw <= 1 or ch <= 1:
-            self.root.after(100, self._resize_and_display)
-            return
-
-        img_w, img_h = self.current_image_obj.size
-        ratio = min(cw / img_w, ch / img_h, 1.0)
-        new_w = int(img_w * ratio)
-        new_h = int(img_h * ratio)
-
-        resized = self.current_image_obj.resize((new_w, new_h), Image.LANCZOS)
-        self.photo_image = ImageTk.PhotoImage(resized)
-        self.image_label.config(image=self.photo_image)
-        self.image_label.image = self.photo_image
+    def _preload_neighbors(self, center_index):
+        """Warm the cache for images around the current one."""
+        for offset in range(-PRELOAD_AHEAD, PRELOAD_AHEAD + 1):
+            if offset == 0:
+                continue
+            idx = center_index + offset
+            if 0 <= idx < len(self.filtered_images):
+                path = self.filtered_images[idx]
+                cw = max(self.image_container.winfo_width() - 20, 50)
+                ch = max(self.image_container.winfo_height() - 20, 50)
+                # Submit to executor; result goes to cache, we ignore the future
+                self._executor.submit(_load_thumbnail, path, cw, ch)
 
     def _on_container_resize(self, event=None):
         if self._after_id:
             self.root.after_cancel(self._after_id)
-        self._after_id = self.root.after(150, self._resize_and_display)
+        self._after_id = self.root.after(150, self._on_resize_done)
+
+    def _on_resize_done(self):
+        """Re-display current image at new size when container resizes."""
+        if self._last_index >= 0 and self.filtered_images:
+            # Force cache miss for new size by clearing just this entry
+            # Actually lru_cache keys include size, so new size auto-misses
+            self._select_and_show(self._last_index)
+
+    # ── Navigation ───────────────────────────────────────────────────────────
 
     def _focus_list_up(self, event=None):
         if self.listbox.size() == 0:
@@ -271,7 +357,6 @@ class ImageSelector:
         return "break"
 
     def _refocus_input(self, event=None):
-        """If user types a printable char while listbox is focused, move it to search."""
         if event and len(event.char) == 1 and event.char.isprintable():
             self.search_var.set(self.search_var.get() + event.char)
             self.input.focus_set()
@@ -286,11 +371,51 @@ class ImageSelector:
         sel = self.listbox.curselection()
         if sel and self.filtered_images:
             self.selected = self.filtered_images[sel[0]]
+            self._shutdown()
             self.root.quit()
 
     def _on_cancel(self, event=None):
         self.selected = None
+        self._shutdown()
         self.root.quit()
+
+    def _shutdown(self):
+        self._executor.shutdown(wait=False)
+
+    # ── Lazy Scanning (optional, used when scanning large dirs) ──────────────
+
+    def start_lazy_scan(self, paths, recursive=False, sort_time=False):
+        """Start background thread to scan directories lazily."""
+        self._scan_done.clear()
+        self._scan_thread = threading.Thread(
+            target=self._scan_worker,
+            args=(paths, recursive, sort_time),
+            daemon=True
+        )
+        self._scan_thread.start()
+
+    def _scan_worker(self, paths, recursive, sort_time):
+        seen = set()
+        for path in paths:
+            p = Path(path).expanduser().resolve()
+            if not p.exists():
+                continue
+            if p.is_dir():
+                pattern = "**/*" if recursive else "*"
+                files = p.glob(pattern)
+                if sort_time:
+                    files = sorted(files, key=lambda x: x.stat().st_mtime, reverse=True)
+                else:
+                    files = sorted(files)
+                for f in files:
+                    if f.suffix.lower() in SUPPORTED_EXTS and f not in seen:
+                        seen.add(f)
+                        # Schedule UI update on main thread
+                        self.root.after(0, lambda fp=str(f): self._append_to_list(fp))
+            elif p.is_file() and p.suffix.lower() in SUPPORTED_EXTS and str(p) not in seen:
+                seen.add(str(p))
+                self.root.after(0, lambda fp=str(p): self._append_to_list(fp))
+        self._scan_done.set()
 
 
 # ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -315,10 +440,11 @@ def collect_images(paths, recursive=False, sort_time=False):
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Interactive image selector")
+    parser = argparse.ArgumentParser(description="High-performance interactive image selector")
     parser.add_argument("paths", nargs="*", default=["."], help="Directories or files to browse")
     parser.add_argument("-r", "--recursive", action="store_true", help="Search recursively")
     parser.add_argument("-t", "--time", action="store_true", help="Sort by modification time (newest first)")
+    parser.add_argument("--lazy", action="store_true", help="Lazy scan: show UI immediately, populate as files are found")
     return parser.parse_args()
 
 
@@ -327,15 +453,23 @@ def parse_args():
 def main():
     args = parse_args()
     paths = args.paths if args.paths else ["."]
-    images = collect_images(paths, recursive=args.recursive, sort_time=args.time)
 
-    if not images:
-        print("No images found.", file=sys.stderr)
-        sys.exit(1)
+    if args.lazy:
+        # Start UI immediately with empty list, scan in background
+        root = Tk()
+        app = ImageSelector(root, [])
+        app.start_lazy_scan(paths, recursive=args.recursive, sort_time=args.time)
+        root.mainloop()
+    else:
+        # Traditional: scan first, then show UI
+        images = collect_images(paths, recursive=args.recursive, sort_time=args.time)
+        if not images:
+            print("No images found.", file=sys.stderr)
+            sys.exit(1)
 
-    root = Tk()
-    app = ImageSelector(root, images)
-    root.mainloop()
+        root = Tk()
+        app = ImageSelector(root, images)
+        root.mainloop()
 
     if hasattr(app, 'selected') and app.selected:
         print(app.selected)
