@@ -45,17 +45,6 @@ MAX_WORKERS = 4           # Background threads for image loading
 
 # ─── Caching ─────────────────────────────────────────────────────────────────
 
-@lru_cache(maxsize=CACHE_SIZE)
-def _load_thumbnail(path: str, max_w: int, max_h: int) -> ImageTk.PhotoImage:
-    """Load and resize an image in a background thread. Cached by path + size."""
-    try:
-        with Image.open(path) as img:
-            img.thumbnail((max_w, max_h), Image.LANCZOS)
-            if img.mode in ('P', 'LA', 'L'):
-                img = img.convert('RGBA' if 'A' in img.mode or img.mode == 'LA' else 'RGB')
-            return ImageTk.PhotoImage(img)
-    except Exception:
-        return None
 
 
 # ─── Main Application ────────────────────────────────────────────────────────
@@ -82,6 +71,16 @@ class ImageSelector:
         # Store both selected path and label
         self.selected_path = None
         self.selected_label = None
+        # Store both selected path and label
+        self.selected_path = None
+        self.selected_label = None
+
+        # --- NEW: manual thumbnail cache + generation tracking ---
+        self._thumbnail_cache = {}
+        self._cache_lock = threading.Lock()
+        self._display_generation = 0
+        self._load_after_id = None
+        # ---------------------------------------------------------
 
         self._setup_window()
         self._build_ui()
@@ -90,6 +89,31 @@ class ImageSelector:
         if self.filtered_items:
             self._select_and_show(0)
         self.input.focus_set()
+
+    def _load_thumbnail(self, path: str, max_w: int, max_h: int):
+        """Load and resize an image. Cached per-instance with fine-grained locking."""
+        cache_key = (path, max_w, max_h)
+        with self._cache_lock:
+            if cache_key in self._thumbnail_cache:
+                # Move to end to keep LRU order
+                photo = self._thumbnail_cache.pop(cache_key)
+                self._thumbnail_cache[cache_key] = photo
+                return photo
+        try:
+            with Image.open(path) as img:
+                img.thumbnail((max_w, max_h), Image.LANCZOS)
+                if img.mode in ('P', 'LA', 'L'):
+                    img = img.convert('RGBA' if 'A' in img.mode or img.mode == 'LA' else 'RGB')
+                photo = ImageTk.PhotoImage(img)
+            with self._cache_lock:
+                if len(self._thumbnail_cache) >= CACHE_SIZE:
+                    while len(self._thumbnail_cache) >= CACHE_SIZE:
+                        oldest_key = next(iter(self._thumbnail_cache))
+                        del self._thumbnail_cache[oldest_key]
+                self._thumbnail_cache[cache_key] = photo
+            return photo
+        except Exception:
+            return None
 
     def _setup_window(self):
         self.root.title("Image Selector")
@@ -262,6 +286,7 @@ class ImageSelector:
             self._select_and_show(sel[0])
         self._refocus_entry()
 
+
     def _select_and_show(self, index):
         if not self.filtered_items:
             return
@@ -279,32 +304,57 @@ class ImageSelector:
         self.image_label.config(image="", text="Loading...")
         self.status_label.config(text=f"Loading...  |  {index + 1} / {len(self.filtered_items)}")
 
-        # Cancel any pending load
+        # Cancel pending debounced load
+        if self._load_after_id:
+            self.root.after_cancel(self._load_after_id)
+            self._load_after_id = None
+
+        # Cancel any already-submitted future that hasn't started yet
         if self._pending_future and not self._pending_future.done():
             self._pending_future.cancel()
 
-        # Load in background thread
+        # Only actually load if we stay on this item for 80 ms
+        self._load_after_id = self.root.after(80, self._do_load_image, path, index)
+
+    def _do_load_image(self, path, index):
+        """Actually submit the background load after the debounce window."""
+        self._load_after_id = None
+        self._display_generation += 1
+        current_gen = self._display_generation
+
         self._pending_future = self._executor.submit(
-            self._load_image_thread, path, index
+            self._load_image_thread, path, index, current_gen
         )
         self._pending_future.add_done_callback(
             lambda f, idx=index: self._on_image_loaded(f, idx)
         )
 
-        # Preload neighbors
         self._preload_neighbors(index)
 
-    def _load_image_thread(self, path, index):
+    def _load_image_thread(self, path, index, generation):
+        # If we've already moved on, bail before doing any heavy work
+        if generation != self._display_generation:
+            return "cancelled"
+
         try:
             cw = max(self.image_container.winfo_width() - 20, 50)
             ch = max(self.image_container.winfo_height() - 20, 50)
-            photo = _load_thumbnail(path, cw, ch)
+
+            if generation != self._display_generation:
+                return "cancelled"
+
+            photo = self._load_thumbnail(path, cw, ch)
+
+            if generation != self._display_generation:
+                return "cancelled"
+
             if photo is None:
                 return None
+
             with Image.open(path) as img:
                 w, h = img.size
             size_kb = os.path.getsize(path) / 1024
-            return (photo, w, h, size_kb)
+            return (photo, w, h, size_kb, generation)
         except Exception as e:
             return ("error", str(e))
 
@@ -313,6 +363,8 @@ class ImageSelector:
             return
         try:
             result = future.result()
+            if result == "cancelled":
+                return
             if result is None:
                 self.image_label.config(image="", text="Failed to load")
                 self.status_label.config(text="Error loading image")
@@ -322,7 +374,10 @@ class ImageSelector:
                 self.status_label.config(text=f"Error: {result[1]}")
                 return
 
-            photo, w, h, size_kb = result
+            photo, w, h, size_kb, generation = result
+            if generation != self._display_generation:
+                return
+
             self.image_label.config(image=photo, text="")
             self.image_label.image = photo
             self.status_label.config(
@@ -340,7 +395,8 @@ class ImageSelector:
                 _, path = self.filtered_items[idx]
                 cw = max(self.image_container.winfo_width() - 20, 50)
                 ch = max(self.image_container.winfo_height() - 20, 50)
-                self._executor.submit(_load_thumbnail, path, cw, ch)
+                self._executor.submit(self._load_thumbnail, path, cw, ch)
+
 
     def _on_container_resize(self, event=None):
         if self._after_id:
@@ -398,6 +454,8 @@ class ImageSelector:
         self.root.quit()
 
     def _shutdown(self):
+        if self._load_after_id:
+            self.root.after_cancel(self._load_after_id)
         self._executor.shutdown(wait=False)
 
     # ── Lazy Scanning ──────────────────────────────────────────────────────────
