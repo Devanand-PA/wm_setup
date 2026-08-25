@@ -18,8 +18,7 @@ import os
 import argparse
 import threading
 from pathlib import Path
-from concurrent.futures import ThreadPoolExecutor, Future
-from functools import lru_cache
+from concurrent.futures import ThreadPoolExecutor
 from collections import deque
 from tkinter import Tk, Frame, Listbox, Entry, Label, Scrollbar, StringVar
 from tkinter import BOTH, LEFT, RIGHT, TOP, BOTTOM, X, Y, END, SINGLE
@@ -42,10 +41,6 @@ THEME = {
 CACHE_SIZE = 100          # Max cached thumbnails
 PRELOAD_AHEAD = 3         # How many images to preload ahead/behind
 MAX_WORKERS = 4           # Background threads for image loading
-
-# ─── Caching ─────────────────────────────────────────────────────────────────
-
-
 
 # ─── Main Application ────────────────────────────────────────────────────────
 
@@ -71,16 +66,13 @@ class ImageSelector:
         # Store both selected path and label
         self.selected_path = None
         self.selected_label = None
-        # Store both selected path and label
-        self.selected_path = None
-        self.selected_label = None
 
-        # --- NEW: manual thumbnail cache + generation tracking ---
+        # Closing flag to prevent callbacks after window destroyed
+        self._closing = False
+
+        # Manual thumbnail cache with locking (replaces lru_cache)
         self._thumbnail_cache = {}
         self._cache_lock = threading.Lock()
-        self._display_generation = 0
-        self._load_after_id = None
-        # ---------------------------------------------------------
 
         self._setup_window()
         self._build_ui()
@@ -91,11 +83,13 @@ class ImageSelector:
         self.input.focus_set()
 
     def _load_thumbnail(self, path: str, max_w: int, max_h: int):
-        """Load and resize an image. Cached per-instance with fine-grained locking."""
+        """Load and resize an image, using a per-instance cache with LRU eviction."""
+        if self._closing:
+            return None
         cache_key = (path, max_w, max_h)
         with self._cache_lock:
             if cache_key in self._thumbnail_cache:
-                # Move to end to keep LRU order
+                # Move to end to maintain LRU order
                 photo = self._thumbnail_cache.pop(cache_key)
                 self._thumbnail_cache[cache_key] = photo
                 return photo
@@ -214,6 +208,9 @@ class ImageSelector:
         self.listbox.bind("<<ListboxSelect>>", self._on_list_select)
         self.listbox.bind("<Double-Button-1>", self._on_confirm)
 
+        # Handle window close (X button)
+        self.root.protocol("WM_DELETE_WINDOW", self._on_cancel)
+
         # Up/Down on both widgets move selection without stealing focus
         for widget in (self.input, self.listbox):
             widget.bind("<Up>", self._focus_list_up)
@@ -248,6 +245,8 @@ class ImageSelector:
 
     def _append_to_list(self, path):
         """Thread-safe append for lazy scanning."""
+        if self._closing:
+            return
         label = os.path.basename(path)
         self.all_items.append((label, path))
         self.filtered_items.append((label, path))
@@ -286,7 +285,6 @@ class ImageSelector:
             self._select_and_show(sel[0])
         self._refocus_entry()
 
-
     def _select_and_show(self, index):
         if not self.filtered_items:
             return
@@ -304,53 +302,36 @@ class ImageSelector:
         self.image_label.config(image="", text="Loading...")
         self.status_label.config(text=f"Loading...  |  {index + 1} / {len(self.filtered_items)}")
 
-        # Cancel pending debounced load
-        if self._load_after_id:
-            self.root.after_cancel(self._load_after_id)
-            self._load_after_id = None
-
-        # Cancel any already-submitted future that hasn't started yet
+        # Cancel any pending load
         if self._pending_future and not self._pending_future.done():
             self._pending_future.cancel()
 
-        # Only actually load if we stay on this item for 80 ms
-        self._load_after_id = self.root.after(80, self._do_load_image, path, index)
-
-    def _do_load_image(self, path, index):
-        """Actually submit the background load after the debounce window."""
-        self._load_after_id = None
-        self._display_generation += 1
-        current_gen = self._display_generation
-
+        # Load in background thread with generation guard
+        generation = getattr(self, '_display_generation', 0) + 1
+        self._display_generation = generation
         self._pending_future = self._executor.submit(
-            self._load_image_thread, path, index, current_gen
+            self._load_image_thread, path, index, generation
         )
         self._pending_future.add_done_callback(
             lambda f, idx=index: self._on_image_loaded(f, idx)
         )
 
+        # Preload neighbors
         self._preload_neighbors(index)
 
     def _load_image_thread(self, path, index, generation):
-        # If we've already moved on, bail before doing any heavy work
-        if generation != self._display_generation:
+        if self._closing or generation != self._display_generation:
             return "cancelled"
-
         try:
             cw = max(self.image_container.winfo_width() - 20, 50)
             ch = max(self.image_container.winfo_height() - 20, 50)
-
-            if generation != self._display_generation:
+            if self._closing or generation != self._display_generation:
                 return "cancelled"
-
             photo = self._load_thumbnail(path, cw, ch)
-
-            if generation != self._display_generation:
+            if self._closing or generation != self._display_generation:
                 return "cancelled"
-
             if photo is None:
                 return None
-
             with Image.open(path) as img:
                 w, h = img.size
             size_kb = os.path.getsize(path) / 1024
@@ -359,7 +340,7 @@ class ImageSelector:
             return ("error", str(e))
 
     def _on_image_loaded(self, future, expected_index):
-        if expected_index != self._last_index:
+        if self._closing or expected_index != self._last_index:
             return
         try:
             result = future.result()
@@ -387,6 +368,8 @@ class ImageSelector:
             self.status_label.config(text=f"Error: {e}")
 
     def _preload_neighbors(self, center_index):
+        if self._closing:
+            return
         for offset in range(-PRELOAD_AHEAD, PRELOAD_AHEAD + 1):
             if offset == 0:
                 continue
@@ -397,13 +380,16 @@ class ImageSelector:
                 ch = max(self.image_container.winfo_height() - 20, 50)
                 self._executor.submit(self._load_thumbnail, path, cw, ch)
 
-
     def _on_container_resize(self, event=None):
+        if self._closing:
+            return
         if self._after_id:
             self.root.after_cancel(self._after_id)
         self._after_id = self.root.after(150, self._on_resize_done)
 
     def _on_resize_done(self):
+        if self._closing:
+            return
         if self._last_index >= 0 and self.filtered_items:
             self._select_and_show(self._last_index)
 
@@ -439,9 +425,9 @@ class ImageSelector:
             self.listbox.yview_scroll(int(-1 * (event.delta / 120)), "units")
 
     def _on_confirm(self, event=None):
-        sel = self.listbox.curselection()
-        if sel and self.filtered_items:
-            label, path = self.filtered_items[sel[0]]
+        # Use _last_index instead of listbox.curselection()
+        if self._last_index >= 0 and self.filtered_items:
+            label, path = self.filtered_items[self._last_index]
             self.selected_label = label
             self.selected_path = path
             self._shutdown()
@@ -454,8 +440,9 @@ class ImageSelector:
         self.root.quit()
 
     def _shutdown(self):
-        if self._load_after_id:
-            self.root.after_cancel(self._load_after_id)
+        self._closing = True
+        if self._after_id:
+            self.root.after_cancel(self._after_id)
         self._executor.shutdown(wait=False)
 
     # ── Lazy Scanning ──────────────────────────────────────────────────────────
@@ -472,6 +459,8 @@ class ImageSelector:
     def _scan_worker(self, paths, recursive, sort_time):
         seen = set()
         for path in paths:
+            if self._closing:
+                break
             p = Path(path).expanduser().resolve()
             if not p.exists():
                 continue
@@ -526,7 +515,6 @@ def parse_args():
     parser.add_argument("--list-entries", help="Newline-separated list entries (as a string)")
     parser.add_argument("--image-file", help="File containing newline-separated image file paths")
     parser.add_argument("--image-entries", help="Newline-separated image file paths (as a string)")
-    # NEW: option to return label instead of path
     parser.add_argument("--return-label", action="store_true", help="In dmenu mode, output the selected list label instead of the image path")
     return parser.parse_args()
 
@@ -581,14 +569,14 @@ def main():
         root.mainloop()
 
         if app.selected_path is not None:
-            # Decide what to output
             if args.return_label:
                 print(app.selected_label)
             else:
                 print(app.selected_path)
-            sys.exit(0)
+            sys.stdout.flush()
+            os._exit(0)
         else:
-            sys.exit(1)
+            os._exit(1)
 
     # Normal mode
     if args.lazy:
@@ -607,11 +595,11 @@ def main():
         root.mainloop()
 
     if app.selected_path is not None:
-        # In normal mode we always output the path
         print(app.selected_path)
-        sys.exit(0)
+        sys.stdout.flush()
+        os._exit(0)
     else:
-        sys.exit(1)
+        os._exit(1)
 
 
 if __name__ == "__main__":
