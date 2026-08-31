@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
 High-performance image selector with async loading, thumbnail caching,
-and lazy directory scanning.
+lazy directory scanning, and multi-select support.
+
 Usage:
     sel_img.py [directory...] [-r] [-t]
     -r  : recursively search subdirectories
@@ -11,6 +12,14 @@ Dmenu mode:
     sel_img.py --dmenu-mode --list-file FILE --image-file FILE
     sel_img.py --dmenu-mode --list-entries "a\nb" --image-entries "1.png\n2.png"
     --return-label  : output the label instead of the image path (dmenu only)
+
+Multi-select:
+    <Control-Return>  : select / deselect current item
+    <Return>          : confirm — prints all selected items + current item
+
+Pre-select:
+    --pre-select "entry1\nentry2"      : pre-select labels at launch
+    --pre-select-file FILE             : read pre-select labels from file
 """
 
 import sys
@@ -36,6 +45,8 @@ THEME = {
     "fg_bright":    "#eceff4",
     "accent":       "#88c0d0",
     "accent_fg":    "#2e3440",
+    "selected_bg":  "#5e81ac",
+    "selected_fg":  "#eceff4",
 }
 
 CACHE_SIZE = 100          # Max cached thumbnails
@@ -45,7 +56,9 @@ MAX_WORKERS = 4           # Background threads for image loading
 # ─── Main Application ────────────────────────────────────────────────────────
 
 class ImageSelector:
-    def __init__(self, root, image_paths, display_labels=None):
+    def __init__(self, root, image_paths, display_labels=None, pre_select_labels=None,pass_idx=0,idx_write_path=""):
+        self.idx_write_path = idx_write_path
+
         self.root = root
         # Build list of (label, path) tuples
         if display_labels is None:
@@ -66,6 +79,13 @@ class ImageSelector:
         # Store both selected path and label
         self.selected_path = None
         self.selected_label = None
+        # Multi-select state
+        self.selected_paths = set()
+        self._base_status_text = ""
+
+        # Pre-select: only first occurrence of each label
+        if pre_select_labels:
+            self._apply_pre_select(pre_select_labels)
 
         # Closing flag to prevent callbacks after window destroyed
         self._closing = False
@@ -79,8 +99,17 @@ class ImageSelector:
         self._bind_events()
         self._populate_list()
         if self.filtered_items:
-            self._select_and_show(0)
+            self._select_and_show(pass_idx)
         self.input.focus_set()
+
+    def _apply_pre_select(self, pre_select_labels):
+        """Select the first occurrence of each unique pre-select label."""
+        target_labels = set(pre_select_labels)
+        matched = set()
+        for label, path in self.all_items:
+            if label in target_labels and label not in matched:
+                self.selected_paths.add(path)
+                matched.add(label)
 
     def _load_thumbnail(self, path: str, max_w: int, max_h: int):
         """Load and resize an image, using a per-instance cache with LRU eviction."""
@@ -217,9 +246,13 @@ class ImageSelector:
             widget.bind("<Down>", self._focus_list_down)
 
         self.input.bind("<Return>", self._on_confirm)
+        self.input.bind("<Control-Return>", self._on_ctrl_return)
         self.input.bind("<Escape>", self._on_cancel)
+        self.input.bind("<Control-c>", self._on_ctl_c)
         self.listbox.bind("<Return>", self._on_confirm)
+        self.listbox.bind("<Control-Return>", self._on_ctrl_return)
         self.listbox.bind("<Escape>", self._on_cancel)
+        self.listbox.bind("<Control-c>", self._on_ctl_c)
 
         # Keep focus on Entry when clicking the listbox
         self.listbox.bind("<Button-1>", self._refocus_entry)
@@ -240,8 +273,17 @@ class ImageSelector:
         self.listbox.delete(0, END)
         for label, _ in self.filtered_items:
             self.listbox.insert(END, label)
+        self._update_list_appearance()
         if self.filtered_items:
             self.listbox.select_set(0)
+
+    def _update_list_appearance(self):
+        """Highlight items that are in the multi-select set."""
+        for i, (label, path) in enumerate(self.filtered_items):
+            if path in self.selected_paths:
+                self.listbox.itemconfig(i, bg=THEME["selected_bg"], fg=THEME["selected_fg"])
+            else:
+                self.listbox.itemconfig(i, bg=THEME["bg_secondary"], fg=THEME["fg_text"])
 
     def _append_to_list(self, path):
         """Thread-safe append for lazy scanning."""
@@ -252,6 +294,8 @@ class ImageSelector:
         self.filtered_items.append((label, path))
         idx = len(self.filtered_items) - 1
         self.listbox.insert(END, label)
+        if path in self.selected_paths:
+            self.listbox.itemconfig(idx, bg=THEME["selected_bg"], fg=THEME["selected_fg"])
         if idx == 0:
             self.listbox.select_set(0)
             self._select_and_show(0)
@@ -275,7 +319,8 @@ class ImageSelector:
             self._last_index = -1
             self.filename_label.config(text="No matches")
             self.image_label.config(image="", text="No matches")
-            self.status_label.config(text="0 items")
+            self._base_status_text = "No matches"
+            self.status_label.config(text=f"{self._base_status_text}  |  {len(self.selected_paths)} selected")
 
     # ── Selection & Display ──────────────────────────────────────────────────
 
@@ -286,6 +331,11 @@ class ImageSelector:
         self._refocus_entry()
 
     def _select_and_show(self, index):
+        if self.idx_write_path :
+            with open(self.idx_write_path,'w') as IDX_FILE :
+                IDX_FILE.write(str(index))
+
+
         if not self.filtered_items:
             return
         index = max(0, min(index, len(self.filtered_items) - 1))
@@ -300,7 +350,8 @@ class ImageSelector:
         label, path = self.filtered_items[index]
         self.filename_label.config(text=label)
         self.image_label.config(image="", text="Loading...")
-        self.status_label.config(text=f"Loading...  |  {index + 1} / {len(self.filtered_items)}")
+        self._base_status_text = f"Loading...  |  {index + 1} / {len(self.filtered_items)}"
+        self.status_label.config(text=f"{self._base_status_text}  |  {len(self.selected_paths)} selected")
 
         # Cancel any pending load
         if self._pending_future and not self._pending_future.done():
@@ -348,11 +399,13 @@ class ImageSelector:
                 return
             if result is None:
                 self.image_label.config(image="", text="Failed to load")
-                self.status_label.config(text="Error loading image")
+                self._base_status_text = "Error loading image"
+                self.status_label.config(text=f"{self._base_status_text}  |  {len(self.selected_paths)} selected")
                 return
             if result[0] == "error":
                 self.image_label.config(image="", text=f"Error: {result[1]}")
-                self.status_label.config(text=f"Error: {result[1]}")
+                self._base_status_text = f"Error: {result[1]}"
+                self.status_label.config(text=f"{self._base_status_text}  |  {len(self.selected_paths)} selected")
                 return
 
             photo, w, h, size_kb, generation = result
@@ -361,11 +414,11 @@ class ImageSelector:
 
             self.image_label.config(image=photo, text="")
             self.image_label.image = photo
-            self.status_label.config(
-                text=f"{w}×{h}  |  {size_kb:.1f} KB  |  {expected_index + 1} / {len(self.filtered_items)}"
-            )
+            self._base_status_text = f"{w}×{h}  |  {size_kb:.1f} KB  |  {expected_index + 1} / {len(self.filtered_items)}"
+            self.status_label.config(text=f"{self._base_status_text}  |  {len(self.selected_paths)} selected")
         except Exception as e:
-            self.status_label.config(text=f"Error: {e}")
+            self._base_status_text = f"Error: {e}"
+            self.status_label.config(text=f"{self._base_status_text}  |  {len(self.selected_paths)} selected")
 
     def _preload_neighbors(self, center_index):
         if self._closing:
@@ -424,18 +477,63 @@ class ImageSelector:
         if event and self.listbox.winfo_exists():
             self.listbox.yview_scroll(int(-1 * (event.delta / 120)), "units")
 
+    # ── Multi-select ─────────────────────────────────────────────────────────
+
+    def _on_ctrl_return(self, event=None):
+        """Toggle multi-select on the currently focused item."""
+        if not self.filtered_items or self._last_index < 0:
+            return "break"
+        path = self.filtered_items[self._last_index][1]
+        if path in self.selected_paths:
+            self.selected_paths.discard(path)
+        else:
+            self.selected_paths.add(path)
+        self._update_list_appearance()
+        self.status_label.config(text=f"{self._base_status_text}  |  {len(self.selected_paths)} selected")
+        return "break"
+
+    def _on_ctl_c(self, event=None):
+        self.selected_path = None
+        self.selected_label = None
+        self.selected_paths = set()
+        self.selected_paths_list = []
+        self.selected_labels_list = []
+        self._shutdown()
+        self.root.quit()
+        sys.exit(99)
+
     def _on_confirm(self, event=None):
-        # Use _last_index instead of listbox.curselection()
+        # Build ordered list of all selected paths (in all_items order)
+        result_paths = []
+        result_labels = []
+        for label, path in self.all_items:
+            if path in self.selected_paths and path not in result_paths:
+                result_paths.append(path)
+                result_labels.append(label)
+
+        # Add current if available and not already included
         if self._last_index >= 0 and self.filtered_items:
-            label, path = self.filtered_items[self._last_index]
-            self.selected_label = label
-            self.selected_path = path
-            self._shutdown()
-            self.root.quit()
+            current_label, current_path = self.filtered_items[self._last_index]
+            if current_path not in result_paths:
+                result_paths.append(current_path)
+                result_labels.append(current_label)
+            self.selected_path = current_path
+            self.selected_label = current_label
+        else:
+            self.selected_path = None
+            self.selected_label = None
+
+        self.selected_paths_list = result_paths
+        self.selected_labels_list = result_labels
+        self._shutdown()
+        self.root.quit()
 
     def _on_cancel(self, event=None):
         self.selected_path = None
         self.selected_label = None
+        self.selected_paths = set()
+        self.selected_paths_list = []
+        self.selected_labels_list = []
         self._shutdown()
         self.root.quit()
 
@@ -515,14 +613,56 @@ def parse_args():
     parser.add_argument("--list-entries", help="Newline-separated list entries (as a string)")
     parser.add_argument("--image-file", help="File containing newline-separated image file paths")
     parser.add_argument("--image-entries", help="Newline-separated image file paths (as a string)")
+    parser.add_argument("--pass-idx", help="Pass the index to start the selector at")
+    parser.add_argument("--idx-write-path", help="File path to write the current index for debugging")
     parser.add_argument("--return-label", action="store_true", help="In dmenu mode, output the selected list label instead of the image path")
+
+    # Pre-select arguments
+    parser.add_argument("--pre-select", help="Newline-separated labels to pre-select at launch")
+    parser.add_argument("--pre-select-file", help="File containing newline-separated labels to pre-select")
     return parser.parse_args()
+
+
+def read_pre_select(args):
+    """Read pre-select labels from args, returning a list or None."""
+    if args.pre_select and args.pre_select_file:
+        print("Error: both --pre-select and --pre-select-file provided.", file=sys.stderr)
+        sys.exit(1)
+
+    if args.pre_select_file:
+        try:
+            with open(args.pre_select_file, 'r') as f:
+                return [line.rstrip('\n') for line in f]
+        except Exception as e:
+            print(f"Error reading pre-select file: {e}", file=sys.stderr)
+            sys.exit(1)
+
+    if args.pre_select:
+        return args.pre_select.split('\n')
+
+    return None
 
 
 # ─── Entry Point ─────────────────────────────────────────────────────────────
 
 def main():
     args = parse_args()
+    pre_select_labels = read_pre_select(args)
+    if args.pass_idx :
+        pass_idx = int(args.pass_idx)
+    else :
+        pass_idx = 0
+
+    if args.idx_write_path :
+        idx_write_path = args.idx_write_path
+    else :
+        idx_write_path = ""
+
+
+    if args.pass_idx :
+        pass_idx = int(args.pass_idx)
+    else :
+        pass_idx = 0
 
     # Dmenu mode
     if args.dmenu_mode:
@@ -565,10 +705,19 @@ def main():
             sys.exit(1)
 
         root = Tk()
-        app = ImageSelector(root, image_entries, display_labels=list_entries)
+        app = ImageSelector(root, image_entries, display_labels=list_entries, pre_select_labels=pre_select_labels,pass_idx=pass_idx,idx_write_path=idx_write_path)
         root.mainloop()
 
-        if app.selected_path is not None:
+        if hasattr(app, 'selected_paths_list') and app.selected_paths_list:
+            if args.return_label:
+                for label in app.selected_labels_list:
+                    print(label)
+            else:
+                for path in app.selected_paths_list:
+                    print(path)
+            sys.stdout.flush()
+            os._exit(0)
+        elif app.selected_path is not None:
             if args.return_label:
                 print(app.selected_label)
             else:
@@ -581,7 +730,7 @@ def main():
     # Normal mode
     if args.lazy:
         root = Tk()
-        app = ImageSelector(root, [])
+        app = ImageSelector(root, [], pre_select_labels=pre_select_labels,pass_idx=pass_idx,idx_write_path=idx_write_path)
         app.start_lazy_scan(args.paths, recursive=args.recursive, sort_time=args.time)
         root.mainloop()
     else:
@@ -591,10 +740,15 @@ def main():
             sys.exit(1)
 
         root = Tk()
-        app = ImageSelector(root, images)
+        app = ImageSelector(root, images, pre_select_labels=pre_select_labels,pass_idx=pass_idx,idx_write_path=idx_write_path)
         root.mainloop()
 
-    if app.selected_path is not None:
+    if hasattr(app, 'selected_paths_list') and app.selected_paths_list:
+        for path in app.selected_paths_list:
+            print(path)
+        sys.stdout.flush()
+        os._exit(0)
+    elif app.selected_path is not None:
         print(app.selected_path)
         sys.stdout.flush()
         os._exit(0)
