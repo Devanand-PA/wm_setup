@@ -1,0 +1,457 @@
+#!/usr/bin/env python3
+
+import os
+import sys
+import json
+import random
+import shutil
+import subprocess
+from pathlib import Path
+
+
+# ---------------------------------------------------------------------------
+# Configuration
+# ---------------------------------------------------------------------------
+
+HOME = Path.home()
+
+BACKGROUNDS_DIR = HOME / "Pictures" / "Backgrounds"
+BGSET_DIR = HOME / "Pictures" / "bg-backups"
+
+WALLPAPER_STATE = HOME / ".local/share/wallpapers/wal"
+
+IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg"}
+
+WM_SETUP_DIR = Path(os.path.expanduser(os.getenv("WM_SETUP_DIR", "")))
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+def run(*args, check=True):
+    return subprocess.run(args, check=check)
+
+
+def find_images():
+    return [
+        f for f in BACKGROUNDS_DIR.rglob("*")
+        if f.is_file() and f.suffix.lower() in IMAGE_EXTENSIONS
+    ]
+
+
+def session_type():
+    return os.environ.get("XDG_SESSION_TYPE", "").lower()
+
+
+# ---------------------------------------------------------------------------
+# Wallpaper
+# ---------------------------------------------------------------------------
+
+def get_current_image():
+    try:
+        if session_type() == "wayland":
+            result = subprocess.run(
+                ["awww", "query", "-j"],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+
+            data = json.loads(result.stdout)
+            return list(data.values())[0][0]["displaying"]["image"]
+
+        elif session_type() == "x11":
+            return WALLPAPER_STATE.read_text()
+
+    except (
+        subprocess.CalledProcessError,
+        json.JSONDecodeError,
+        KeyError,
+        IndexError,
+        StopIteration,
+        FileNotFoundError,
+    ) as e:
+        print(
+            f"Warning: could not get current wallpaper ({e})",
+            file=sys.stderr,
+        )
+
+    return None
+
+
+def set_wallpaper(image):
+    if session_type() == "wayland":
+        run("awww", "img", str(image))
+
+    elif session_type() == "x11":
+        run("killall", "xwallpaper", check=False)
+        run("xwallpaper", "--zoom", str(image))
+
+    else:
+        print(
+            f"Unsupported session type: {session_type()}",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    WALLPAPER_STATE.parent.mkdir(parents=True, exist_ok=True)
+    WALLPAPER_STATE.write_text(str(image))
+
+
+def change_background():
+    images = find_images()
+
+    if not images:
+        print(
+            f"No images found in {BACKGROUNDS_DIR}",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    current = get_current_image()
+    selected = random.choice(images)
+
+    while len(images) > 1 and str(selected) == current:
+        selected = random.choice(images)
+
+    print(f"Setting wallpaper: {selected}")
+
+    set_wallpaper(selected)
+
+    # Wallpaper -> pywal -> everything else
+    run("wal", "-n", "-s", "-i", str(selected))
+    walscript()
+
+
+# ---------------------------------------------------------------------------
+# Theme / wallpaper set
+# ---------------------------------------------------------------------------
+
+def pick_set():
+    if not BGSET_DIR.is_dir():
+        print(
+            f"Background sets directory not found: {BGSET_DIR}",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    entries = sorted(
+        p.name for p in BGSET_DIR.iterdir()
+        if p.is_dir()
+    )
+
+    if not entries:
+        print(
+            f"No background sets found in {BGSET_DIR}",
+            file=sys.stderr,
+        )
+        return None
+
+    result = subprocess.run(
+        ["dmenu", "-l", "10", "-i"],
+        input="\n".join(entries),
+        capture_output=True,
+        text=True,
+    )
+
+    selection = result.stdout.strip()
+    return selection or None
+
+
+def change_theme():
+    selected = pick_set()
+
+    if not selected:
+        return
+
+    source_dir = BGSET_DIR / selected
+
+    if not source_dir.is_dir():
+        print(
+            f"Error: '{source_dir}' is not a directory.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    BACKGROUNDS_DIR.mkdir(parents=True, exist_ok=True)
+
+    # Remove existing background files.
+    for f in BACKGROUNDS_DIR.iterdir():
+        if f.is_file():
+            f.unlink()
+
+    # Copy the new set.
+    copied = 0
+
+    for f in source_dir.iterdir():
+        if f.is_file() and f.suffix.lower() in IMAGE_EXTENSIONS:
+            shutil.copy2(f, BACKGROUNDS_DIR / f.name)
+            copied += 1
+
+    if copied == 0:
+        print(
+            f"Warning: no images found in '{source_dir}'.",
+            file=sys.stderr,
+        )
+        return
+
+    print(
+        f"Copied {copied} image(s) from '{selected}' "
+        f"→ {BACKGROUNDS_DIR}"
+    )
+
+    # Pick a wallpaper from the newly selected theme.
+    change_background()
+
+
+# ---------------------------------------------------------------------------
+# WalScript
+# ---------------------------------------------------------------------------
+
+def walscript(alpha="0.75", light=False):
+    color_file = HOME / ".cache/wal/colors"
+
+    with open(color_file) as f:
+        wal_colors = f.read().splitlines()
+
+    if light:
+        print("Light Mode")
+        title_fg = "#000000"
+        title_bg = wal_colors[1]
+    else:
+        print("Dark Mode")
+        title_fg = wal_colors[15]
+        title_bg = "#000000"
+
+    # -----------------------------------------------------------------------
+    # dwm
+    # -----------------------------------------------------------------------
+
+    dwm_color = WM_SETUP_DIR / "dwm/colors.h"
+
+    dwm_color.parent.mkdir(parents=True, exist_ok=True)
+
+    dwm_color.write_text(f'''
+static char normbordercolor[] = "#000000";
+static char normfgcolor[] = "{wal_colors[7]}";
+static char normbgcolor[] = "{wal_colors[0]}";
+static char selbordercolor[] = "{wal_colors[7]}";
+static char selbgcolor[] = "{wal_colors[2]}";
+static char selfgcolor[] = "{wal_colors[0]}";
+static char dwm_titlebg[] = "{title_bg}";
+static char dwm_titlefg[] = "{title_fg}";
+''')
+
+    # -----------------------------------------------------------------------
+    # Zathura
+    # -----------------------------------------------------------------------
+
+    zathura_colors = HOME / ".config/zathura/colors"
+    zathura_colors.parent.mkdir(parents=True, exist_ok=True)
+
+    zathura_colors.write_text(f'''
+set recolor-darkcolor "{wal_colors[7]}"
+set recolor-lightcolor "{wal_colors[0]}"
+''')
+
+    # -----------------------------------------------------------------------
+    # Tkinter
+    # -----------------------------------------------------------------------
+
+    tkinter_colors = HOME / ".config/Tkinter/style.json"
+    tkinter_colors.parent.mkdir(parents=True, exist_ok=True)
+
+    tkinter_style = {
+        "frame_style": {
+            "background": wal_colors[0],
+        },
+        "listbox_style": {
+            "background": wal_colors[0],
+            "foreground": wal_colors[7],
+            "font": ["JetBrains Mono", 12],
+        },
+        "label_style": {
+            "background": wal_colors[0],
+            "foreground": wal_colors[7],
+            "font": ["JetBrains Mono", 12],
+        },
+    }
+
+    with open(tkinter_colors, "w") as f:
+        json.dump(tkinter_style, f)
+
+    # -----------------------------------------------------------------------
+    # dmenu
+    # -----------------------------------------------------------------------
+
+    dmenu_colors = WM_SETUP_DIR / "dmenu/colors.h"
+    dmenu_colors.parent.mkdir(parents=True, exist_ok=True)
+
+    dmenu_colors.write_text(f'''
+static const char *colors[SchemeLast][2] = {{
+    /*     fg         bg       */
+    [SchemeNorm] = {{ "{wal_colors[7]}", "{wal_colors[0]}" }},
+    [SchemeSel]  = {{ "{wal_colors[0]}", "{wal_colors[1]}" }},
+    [SchemeOut]  = {{ "{wal_colors[6]}", "{wal_colors[7]}" }},
+}};
+''')
+
+    # -----------------------------------------------------------------------
+    # suckless st
+    # -----------------------------------------------------------------------
+
+    st_colors = WM_SETUP_DIR / "st/colors.h"
+    st_colors.parent.mkdir(parents=True, exist_ok=True)
+
+    colors = ",\n".join(
+        f'"{c}",'
+        for c in wal_colors[:16]
+    )
+
+    st_colors.write_text(f'''
+static const char *colorname[] = {{
+{colors}
+
+/* more colors can be added after 255 to use with DefaultXX */
+"#444444",
+"#555555",
+"{wal_colors[15]}",
+"{wal_colors[0]}",
+}};
+
+/* bg opacity */
+float alpha = {alpha};
+''')
+
+    # -----------------------------------------------------------------------
+    # wal.png
+    # -----------------------------------------------------------------------
+
+    wal_image = HOME / ".cache/wal/wal"
+
+    if wal_image.exists():
+        shutil.copy2(
+            wal_image,
+            HOME / ".cache/wal/wal.png",
+        )
+
+    # -----------------------------------------------------------------------
+    # Waybar
+    # -----------------------------------------------------------------------
+
+    waybar_css = HOME / ".config/waybar/wal.css"
+    waybar_css.parent.mkdir(parents=True, exist_ok=True)
+
+    waybar_css.write_text(
+        "\n".join(
+            f"@define-color color{i} {wal_colors[i]};"
+            for i in range(16)
+        ) + "\n"
+    )
+
+    run("pkill", "waybar", check=False)
+    run("waybar")
+
+
+# ---------------------------------------------------------------------------
+# Hyprpaper random background
+# ---------------------------------------------------------------------------
+
+def select_bg():
+    run("pidof", "hyprpaper", check=False)
+
+    if subprocess.run(
+        ["pidof", "hyprpaper"],
+        capture_output=True,
+    ).returncode != 0:
+        subprocess.Popen(["hyprpaper"])
+
+    images = find_images()
+
+    if not images:
+        print(
+            f"No images found in {BACKGROUNDS_DIR}",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    pic = random.choice(images)
+
+    run("hyprctl", "hyprpaper", "preload", str(pic))
+    run(
+        "hyprctl",
+        "hyprpaper",
+        "wallpaper",
+        f"HDMI-A-1,{pic}",
+    )
+
+
+# ---------------------------------------------------------------------------
+# Command line
+# ---------------------------------------------------------------------------
+
+def usage():
+    print("""Usage:
+    themesettler change-background
+    themesettler change-theme
+    themesettler select-bg
+    themesettler walscript [--light] [--alpha VALUE]
+""")
+
+
+def main():
+    if len(sys.argv) < 2:
+        usage()
+        sys.exit(1)
+
+    command = sys.argv[1]
+
+    if command == "change-background":
+        change_background()
+
+    elif command == "change-theme":
+        change_theme()
+
+    elif command == "select-bg":
+        select_bg()
+
+    elif command == "walscript":
+        alpha = "0.75"
+        light = False
+
+        i = 2
+
+        while i < len(sys.argv):
+            if sys.argv[i] in ("-l", "--light"):
+                light = True
+
+            elif sys.argv[i] in ("-a", "--alpha"):
+                i += 1
+
+                if i >= len(sys.argv):
+                    print("--alpha requires a value", file=sys.stderr)
+                    sys.exit(1)
+
+                alpha = sys.argv[i]
+
+            else:
+                print(f"Unknown option: {sys.argv[i]}", file=sys.stderr)
+                usage()
+                sys.exit(1)
+
+            i += 1
+
+        walscript(alpha, light)
+
+    elif command in ("help", "-h", "--help"):
+        usage()
+
+    else:
+        print(f"Unknown command: {command}", file=sys.stderr)
+        usage()
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
