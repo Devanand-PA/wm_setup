@@ -269,6 +269,24 @@ class GalleryTile(Frame):
         else:
             self.thumb.config(image="", text="✕")
 
+    def update_item(self, index, label, path):
+        """Recycle this tile to a different item. Returns True if the
+        underlying path changed and the thumbnail must be reloaded."""
+        self.index = index
+        if self.path == path:
+            # Same image — only the label/index may have shifted.
+            if self.label != label:
+                self.label = label
+                self.caption.config(text=label)
+            return False
+        self.label = label
+        self.path = path
+        self.caption.config(text=label)
+        self._photo = None
+        self.thumb.config(image="", text="…")
+        return True
+
+
     def set_selected(self, selected):
         if self._selected == selected:
             return
@@ -736,8 +754,7 @@ class ImageSelector:
                 text=f"{self._base_status_text}  |  {len(self.selected_paths)} selected")
 
         if self.view_mode == "gallery":
-            self._reset_gallery_tiles()
-            self._schedule_gallery_refresh(immediate=True)
+            self._schedule_gallery_refresh()
 
     def _reset_gallery_tiles(self):
         for tile in self._gallery_tiles.values():
@@ -1117,32 +1134,44 @@ class ImageSelector:
 
         tw, th = GALLERY_THUMB_MAX
         for idx in range(first_idx, last_idx):
-            if idx in self._gallery_tiles:
-                continue
             label, path = self.filtered_items[idx]
-            tile = GalleryTile(self.gallery_inner, self, idx, label, path)
-            r = idx // cols
-            c = idx % cols
-            tile.place(x=c * col_w + GALLERY_PAD // 2,
-                       y=r * row_h + GALLERY_PAD // 2,
-                       width=GALLERY_TILE_W,
-                       height=GALLERY_TILE_H + GALLERY_CAPTION_H)
-            self._gallery_tiles[idx] = tile
+            tile = self._gallery_tiles.get(idx)
+            needs_thumb = False
+
+            if tile is None:
+                tile = GalleryTile(self.gallery_inner, self, idx, label, path)
+                r = idx // cols
+                c = idx % cols
+                tile.place(x=c * col_w + GALLERY_PAD // 2,
+                           y=r * row_h + GALLERY_PAD // 2,
+                           width=GALLERY_TILE_W,
+                           height=GALLERY_TILE_H + GALLERY_CAPTION_H)
+                self._gallery_tiles[idx] = tile
+                needs_thumb = True
+            elif tile.update_item(idx, label, path):
+                needs_thumb = True
+
             tile.set_selected(path in self.selected_paths)
             tile.set_current(idx == self._last_index)
-            self._load_thumbnail_async(
-                path, tw, th,
-                lambda photo, orig_size, i=idx, g=self._gallery_gen:
-                    self._on_gallery_thumb_ready(i, photo, g)
-            )
+
+            if needs_thumb:
+                # Pass the expected path so a late callback from a previous
+                # item at this grid slot can't paint the wrong thumbnail.
+                self._load_thumbnail_async(
+                    path, tw, th,
+                    lambda photo, orig_size, i=idx, p=path, g=self._gallery_gen:
+                        self._on_gallery_thumb_ready(i, p, photo, g)
+                )
+
+
 
         self._gallery_built = True
 
-    def _on_gallery_thumb_ready(self, index, photo, gen):
+    def _on_gallery_thumb_ready(self, index, expected_path, photo, gen):
         if self._closing or gen != self._gallery_gen:
             return
         tile = self._gallery_tiles.get(index)
-        if tile is None:
+        if tile is None or tile.path != expected_path:
             return
         tile.set_photo(photo)
 
