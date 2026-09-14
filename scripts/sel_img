@@ -24,10 +24,18 @@ Views:
 Pre-select:
     --pre-select "entry1\nentry2"      : pre-select labels at launch
     --pre-select-file FILE             : read pre-select labels from file
+
+Performance notes:
+  * Uses pyvips (libvips) when available — the same C library GdkPixbuf wraps.
+    Falls back to PIL with draft()/reduce()/BILINEAR + reducing_gap.
+  * Persistent on-disk WebP thumbnail cache under ~/.cache/sel_img_thumbs.
+  * Decode workers are threads; libvips/libjpeg-turbo release the GIL inside
+    their C decode+resize paths, so this scales well up to cpu_count workers.
 """
 
 import sys
 import os
+import hashlib
 import argparse
 import threading
 import queue
@@ -35,7 +43,22 @@ from pathlib import Path
 from collections import deque
 from tkinter import Tk, Frame, Listbox, Entry, Label, Scrollbar, StringVar, Canvas
 from tkinter import BOTH, LEFT, RIGHT, TOP, BOTTOM, X, Y, END, SINGLE, NW, NSEW
-from PIL import Image, ImageTk
+
+# ── Optional fast-path decoders ──────────────────────────────────────────────
+try:
+    import pyvips  # type: ignore
+    HAS_VIPS = True
+except Exception:
+    HAS_VIPS = False
+
+try:
+    import numpy as np  # noqa: F401
+    HAS_NUMPY = True
+except Exception:
+    HAS_NUMPY = False
+
+from PIL import Image, ImageTk, ImageFile
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 # ─── Configuration ───────────────────────────────────────────────────────────
 
@@ -51,14 +74,20 @@ THEME = {
     "accent_fg":    "#2e3440",
     "selected_bg":  "#5e81ac",
     "selected_fg":  "#eceff4",
-    "hover_border": "#4c566a",   # subtle; must NOT look like accent/selected
+    "hover_border": "#4c566a",
 }
 
-CACHE_SIZE = 300          # Max cached thumbnails
+CACHE_SIZE = 800          # Max cached thumbnails in RAM
 PRELOAD_AHEAD = 3         # How many images to preload ahead/behind (list view)
 
-# Decode pool — small, bounded, daemon threads.
-DECODE_WORKERS = 4
+# Decode pool — scaled to CPU count. libvips + libjpeg-turbo release the GIL,
+# so threads give real parallelism here.
+DECODE_WORKERS = max(2, min(8, os.cpu_count() or 4))
+
+# Persistent on-disk thumbnail cache
+DISK_CACHE_ENABLED = True
+CACHE_DIR = Path(os.environ.get("XDG_CACHE_HOME", "~/.cache")).expanduser() / "sel_img_thumbs"
+CACHE_WEBP_QUALITY = 82
 
 # Gallery geometry
 GALLERY_TILE_W = 180
@@ -66,7 +95,114 @@ GALLERY_TILE_H = 140
 GALLERY_CAPTION_H = 34
 GALLERY_PAD = 10
 GALLERY_THUMB_MAX = (GALLERY_TILE_W - 8, GALLERY_TILE_H - 8)
-GALLERY_OVERSCAN_ROWS = 2     # extra rows above/below viewport to pre-create
+GALLERY_OVERSCAN_ROWS = 2
+
+
+# ─── Decode helpers (module-level, run on worker threads) ────────────────────
+
+def _get_orig_size(path):
+    """Cheap header-only read. Does not decode pixel data."""
+    try:
+        with Image.open(path) as img:
+            return img.size
+    except Exception:
+        return (0, 0)
+
+
+def _disk_cache_path(path, w, h):
+    try:
+        st = os.stat(path)
+    except OSError:
+        return None
+    key = hashlib.sha1(
+        f"{path}|{st.st_mtime_ns}|{st.st_size}|{w}x{h}".encode("utf-8")
+    ).hexdigest()
+    return CACHE_DIR / key[:2] / (key + ".webp")
+
+
+def _decode_image(path, max_w, max_h):
+    """Decode/thumbnail `path` to fit inside (max_w, max_h).
+
+    Returns (PIL.Image or None, (orig_w, orig_h)).
+    Uses the on-disk WebP cache when possible.
+    """
+    orig_size = _get_orig_size(path)
+
+    cache_file = _disk_cache_path(path, max_w, max_h) if DISK_CACHE_ENABLED else None
+
+    # ── 1) On-disk cache hit ──
+    if cache_file is not None and cache_file.exists():
+        try:
+            with Image.open(cache_file) as img:
+                img.load()
+                return img, orig_size
+        except Exception:
+            try:
+                cache_file.unlink()
+            except OSError:
+                pass
+
+    pil_img = None
+
+    # ── 2) pyvips fast path ──
+    if HAS_VIPS and HAS_NUMPY:
+        try:
+            v = pyvips.Image.thumbnail(path, max_w, height=max_h, size="down")
+            arr = v.numpy()
+            if v.bands == 4:
+                pil_img = Image.fromarray(arr.copy(), "RGBA")
+            elif v.bands == 3:
+                pil_img = Image.fromarray(arr.copy(), "RGB")
+            else:
+                pil_img = Image.fromarray(arr.copy()).convert("RGB")
+        except Exception:
+            pil_img = None
+
+    # ── 3) PIL fallback ──
+    if pil_img is None:
+        try:
+            with Image.open(path) as img:
+                # Ask libjpeg for a pre-scaled decode (huge win on big JPEGs).
+                if img.format == "JPEG":
+                    img.draft("RGB", (max_w, max_h))
+
+                # Box-filter pre-shrink for very large images (cheap O(n)).
+                if img.width > max_w * 4 or img.height > max_h * 4:
+                    factor = max(1, min(img.width // (max_w * 2),
+                                        img.height // (max_h * 2)))
+                    if factor > 1:
+                        img = img.reduce(factor)
+
+                # BILINEAR + reducing_gap is 2-3x faster than LANCZOS and
+                # visually identical at thumbnail sizes.
+                img.thumbnail((max_w, max_h),
+                              Image.Resampling.BILINEAR,
+                              reducing_gap=2.0)
+
+                if img.mode not in ("RGB", "RGBA"):
+                    img = img.convert("RGBA" if "A" in img.mode else "RGB")
+
+                img.load()
+                pil_img = img
+        except Exception:
+            pil_img = None
+
+    # ── 4) Populate the on-disk cache ──
+    if pil_img is not None and cache_file is not None:
+        tmp = None
+        try:
+            cache_file.parent.mkdir(parents=True, exist_ok=True)
+            tmp = cache_file.with_name(cache_file.name + ".tmp")
+            pil_img.save(tmp, "WEBP", quality=CACHE_WEBP_QUALITY, method=0)
+            os.replace(tmp, cache_file)
+        except Exception:
+            if tmp is not None:
+                try:
+                    tmp.unlink()
+                except Exception:
+                    pass
+
+    return pil_img, orig_size
 
 
 # ─── Gallery Tile ────────────────────────────────────────────────────────────
@@ -107,10 +243,7 @@ class GalleryTile(Frame):
             w.bind("<Button-1>", self._on_click)
             w.bind("<Double-Button-1>", self._on_double)
             w.bind("<Enter>", self._on_enter)
-        
-        self._gallery_grid_dirty = True
-        self._gallery_built = False
-        self._pending_gallery_scroll = None   # <-- add   w.bind("<Leave>", self._on_leave)
+            w.bind("<Leave>", self._on_leave)
 
     def _on_click(self, event=None):
         self.app._select_and_show(self.index, from_gallery=True)
@@ -196,20 +329,18 @@ class ImageSelector:
         self._gallery_gen = 0
 
         # ── Lazy decode infrastructure ──
-        # A single work queue consumed by daemon worker threads.
-        # Jobs are (path, max_w, max_h, token, callback) where callback runs on
-        # the main thread with a PIL.Image (or None).
         self._decode_q = queue.Queue()
-        self._decode_tokens = {}          # path -> latest token
+        self._decode_tokens = {}
         self._decode_token_lock = threading.Lock()
         self._decode_token_counter = 0
         self._decode_threads = []
         self._decode_stop = threading.Event()
         self._start_decode_workers()
 
-        # PIL image cache (raw, pre-PhotoImage). Keyed by (path, w, h).
+        # PIL image cache (raw) and PhotoImage cache.
+        # Entry format in _photo_cache: key=(path,w,h) -> (PhotoImage, orig_size)
         self._pil_cache = {}
-        self._photo_cache = {}            # (path, w, h) -> ImageTk.PhotoImage
+        self._photo_cache = {}
         self._cache_lock = threading.Lock()
 
         # Currently displayed PhotoImages (keep refs alive)
@@ -217,6 +348,8 @@ class ImageSelector:
         self._visible_range = (0, 0)
         self._gallery_cols = 1
         self._gallery_grid_dirty = True
+        self._gallery_built = False
+        self._pending_gallery_scroll = None
 
         if pre_select_labels:
             self._apply_pre_select(pre_select_labels)
@@ -250,28 +383,18 @@ class ImageSelector:
             path, max_w, max_h, token, callback = job
             if self._closing or self._decode_stop.is_set():
                 continue
-            # Skip if a newer request superseded this one for the same path
             with self._decode_token_lock:
                 latest = self._decode_tokens.get(path)
             if latest is not None and latest != token:
                 continue
-            pil_img = None
-            try:
-                with Image.open(path) as img:
-                    img.thumbnail((max_w, max_h), Image.LANCZOS)
-                    if img.mode in ('P', 'LA', 'L'):
-                        img = img.convert('RGBA' if 'A' in img.mode or img.mode == 'LA' else 'RGB')
-                    # Copy so we don't rely on the file handle staying open
-                    pil_img = img.copy()
-            except Exception:
-                pil_img = None
+
+            pil_img, orig_size = _decode_image(path, max_w, max_h)
+
             if self._closing or self._decode_stop.is_set():
                 continue
-            # Hand back to main thread for PhotoImage creation
             try:
-                self.root.after(0, callback, pil_img, token)
+                self.root.after(0, callback, pil_img, token, orig_size)
             except Exception:
-                # Root may already be destroyed
                 pass
 
     def _request_decode(self, path, max_w, max_h, callback):
@@ -283,47 +406,48 @@ class ImageSelector:
         self._decode_q.put((path, max_w, max_h, token, callback))
         return token
 
-    # ── Thumbnail helpers ─────────────────────────────────────────────────────
+    # ── Thumbnail cache helpers ───────────────────────────────────────────────
 
     def _cache_get(self, path, w, h):
         key = (path, w, h)
         with self._cache_lock:
-            photo = self._photo_cache.get(key)
-            if photo is not None:
+            entry = self._photo_cache.get(key)
+            if entry is not None:
                 # LRU bump
                 self._photo_cache.pop(key, None)
-                self._photo_cache[key] = photo
-            return photo
+                self._photo_cache[key] = entry
+            return entry
 
-    def _cache_put(self, path, w, h, photo):
+    def _cache_put(self, path, w, h, entry):
         key = (path, w, h)
         with self._cache_lock:
-            self._photo_cache[key] = photo
+            self._photo_cache[key] = entry
             while len(self._photo_cache) > CACHE_SIZE:
                 oldest = next(iter(self._photo_cache))
                 del self._photo_cache[oldest]
 
     def _load_thumbnail_async(self, path, w, h, on_ready):
         """Return a PhotoImage if cached, else schedule a decode and call
-        on_ready(photo_or_None) on the main thread when done."""
+        on_ready(photo_or_None, orig_size) on the main thread when done."""
         cached = self._cache_get(path, w, h)
         if cached is not None:
-            on_ready(cached)
-            return cached
+            photo, orig_size = cached
+            on_ready(photo, orig_size)
+            return photo
 
-        def _done(pil_img, token):
+        def _done(pil_img, token, orig_size):
             if self._closing:
                 return
             if pil_img is None:
-                on_ready(None)
+                on_ready(None, orig_size)
                 return
             try:
                 photo = ImageTk.PhotoImage(pil_img)
             except Exception:
-                on_ready(None)
+                on_ready(None, orig_size)
                 return
-            self._cache_put(path, w, h, photo)
-            on_ready(photo)
+            self._cache_put(path, w, h, (photo, orig_size))
+            on_ready(photo, orig_size)
 
         self._request_decode(path, w, h, _done)
         return None
@@ -452,8 +576,6 @@ class ImageSelector:
         self.gallery_canvas.pack(side=LEFT, fill=BOTH, expand=True)
         self.gallery_vsb.pack(side=RIGHT, fill=Y)
 
-        # Placeholder frame to size the scrollregion; tiles are placed
-        # directly on the canvas using create_window.
         self.gallery_inner = Frame(self.gallery_canvas, bg=THEME["bg_primary"])
         self._gallery_inner_id = self.gallery_canvas.create_window(
             (0, 0), window=self.gallery_inner, anchor=NW
@@ -623,7 +745,7 @@ class ImageSelector:
         self._gallery_tiles.clear()
         self._gallery_gen += 1
         self._gallery_grid_dirty = True
-        self._gallery_built = False           # <-- add
+        self._gallery_built = False
 
     # ── Selection & display ──
     def _on_list_select(self, event=None):
@@ -675,12 +797,13 @@ class ImageSelector:
         ch = max(self.image_container.winfo_height() - 20, 50)
         self._load_thumbnail_async(
             path, cw, ch,
-            lambda photo, i=index, p=path: self._on_preview_ready(i, p, photo)
+            lambda photo, orig_size, i=index, p=path:
+                self._on_preview_ready(i, p, photo, orig_size)
         )
 
         self._preload_neighbors(index)
 
-    def _on_preview_ready(self, index, path, photo):
+    def _on_preview_ready(self, index, path, photo, orig_size):
         if self._closing or index != self._last_index:
             return
         if self.view_mode != "list":
@@ -689,12 +812,10 @@ class ImageSelector:
             self.image_label.config(image="", text="Failed to load")
             self._base_status_text = "Error loading image"
         else:
+            w, h = orig_size
             try:
-                with Image.open(path) as img:
-                    w, h = img.size
                 size_kb = os.path.getsize(path) / 1024
             except Exception:
-                w = h = 0
                 size_kb = 0
             self.image_label.config(image=photo, text="")
             self.image_label.image = photo
@@ -716,7 +837,8 @@ class ImageSelector:
             idx = center_index + offset
             if 0 <= idx < len(self.filtered_items):
                 _, path = self.filtered_items[idx]
-                self._load_thumbnail_async(path, cw, ch, lambda p: None)
+                self._load_thumbnail_async(path, cw, ch,
+                                           lambda photo, orig_size: None)
 
     def _on_container_resize(self, event=None):
         if self._closing:
@@ -819,15 +941,12 @@ class ImageSelector:
         if self._closing:
             return
         self._closing = True
-        # Stop decode workers without waiting
         self._decode_stop.set()
-        # Drain the queue so workers don't block on get()
         try:
             while True:
                 self._decode_q.get_nowait()
         except queue.Empty:
             pass
-        # Tell workers to exit
         for _ in self._decode_threads:
             try:
                 self._decode_q.put_nowait(None)
@@ -904,10 +1023,6 @@ class ImageSelector:
         self.gallery_frame.pack(side=LEFT, fill=BOTH, expand=True)
         self._reset_gallery_tiles()
         self.input.focus_set()
-        # Let the geometry manager settle before we build tiles / compute
-        # scroll offsets.  If the canvas is still unsized after this, the
-        # pending scroll request survives and is applied by _refresh_gallery
-        # once <Configure> delivers the real size.
         self.root.update_idletasks()
         self._schedule_gallery_refresh(immediate=True)
         if self._last_index >= 0:
@@ -923,7 +1038,6 @@ class ImageSelector:
     # ── Lazy gallery ──────────────────────────────────────────────────────────
 
     def _schedule_gallery_refresh(self, immediate=False):
-        """Debounced rebuild of visible gallery tiles."""
         if self._closing or self.view_mode != "gallery":
             return
         if self._gallery_resize_after:
@@ -936,7 +1050,6 @@ class ImageSelector:
         self._schedule_gallery_refresh(immediate=True)
 
     def _on_gallery_scroll(self, event=None):
-        # Called on scroll / configure; make sure the visible window is populated
         self._schedule_gallery_refresh()
 
     def _on_gallery_mousewheel(self, event=None):
@@ -962,10 +1075,6 @@ class ImageSelector:
             self._pending_gallery_scroll = None
             return
 
-        # Never build against an unsized canvas: winfo_*() return 1 before the
-        # widget is mapped, which produces a bogus column count and scroll
-        # extent.  <Configure> re-triggers us once the real size is known.
-        # Keep the pending scroll request alive across this early return.
         if (self.gallery_canvas.winfo_width() <= 1
                 or self.gallery_canvas.winfo_height() <= 1):
             return
@@ -983,18 +1092,12 @@ class ImageSelector:
         total_rows = (len(self.filtered_items) + cols - 1) // cols
         total_h = total_rows * row_h + GALLERY_PAD
 
-        # Publish the full scrollable geometry BEFORE doing anything that
-        # depends on it (yview_moveto, canvasy, ...).
         self.gallery_inner.configure(width=cols * col_w + GALLERY_PAD,
                                      height=max(total_h, 1))
         self.gallery_canvas.coords(self._gallery_inner_id, 0, 0)
         self.gallery_canvas.configure(
             scrollregion=(0, 0, cols * col_w + GALLERY_PAD, total_h))
 
-        # Apply any deferred scroll request now that the scrollregion and
-        # inner-frame height reflect the real grid.  Doing this *before* we
-        # compute the visible row range means the tiles we are about to build
-        # are the ones that will actually be on screen.
         if self._pending_gallery_scroll is not None:
             idx = self._pending_gallery_scroll
             self._pending_gallery_scroll = None
@@ -1029,7 +1132,7 @@ class ImageSelector:
             tile.set_current(idx == self._last_index)
             self._load_thumbnail_async(
                 path, tw, th,
-                lambda photo, i=idx, g=self._gallery_gen:
+                lambda photo, orig_size, i=idx, g=self._gallery_gen:
                     self._on_gallery_thumb_ready(i, photo, g)
             )
 
@@ -1043,8 +1146,6 @@ class ImageSelector:
             return
         tile.set_photo(photo)
 
-
-
     def _update_gallery_selection(self, current_index):
         for idx, tile in self._gallery_tiles.items():
             if idx >= len(self.filtered_items):
@@ -1056,9 +1157,6 @@ class ImageSelector:
     def _scroll_gallery_to(self, index):
         if index < 0 or index >= len(self.filtered_items):
             return
-        # Always route through _refresh_gallery: it is the only place that
-        # knows the final column count, the inner frame height and the
-        # scrollregion.  Anything else produces a bogus scroll fraction.
         self._pending_gallery_scroll = index
         self._schedule_gallery_refresh(immediate=True)
 
@@ -1083,12 +1181,10 @@ class ImageSelector:
         elif row_bottom > y_bottom:
             new_top = row_bottom - canvas_h
         else:
-            return  # already visible
+            return
 
         total = max(self.gallery_inner.winfo_reqheight(), 1)
         self.gallery_canvas.yview_moveto(max(0.0, min(1.0, new_top / total)))
-
-
 
     # ── Gallery navigation ──
     def _gallery_cols_count(self):
