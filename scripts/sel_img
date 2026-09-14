@@ -51,6 +51,7 @@ THEME = {
     "accent_fg":    "#2e3440",
     "selected_bg":  "#5e81ac",
     "selected_fg":  "#eceff4",
+    "hover_border": "#4c566a",   # subtle; must NOT look like accent/selected
 }
 
 CACHE_SIZE = 300          # Max cached thumbnails
@@ -106,7 +107,10 @@ class GalleryTile(Frame):
             w.bind("<Button-1>", self._on_click)
             w.bind("<Double-Button-1>", self._on_double)
             w.bind("<Enter>", self._on_enter)
-            w.bind("<Leave>", self._on_leave)
+        
+        self._gallery_grid_dirty = True
+        self._gallery_built = False
+        self._pending_gallery_scroll = None   # <-- add   w.bind("<Leave>", self._on_leave)
 
     def _on_click(self, event=None):
         self.app._select_and_show(self.index, from_gallery=True)
@@ -119,7 +123,7 @@ class GalleryTile(Frame):
 
     def _on_enter(self, event=None):
         if not self._selected and not self._current:
-            self.configure(highlightbackground=THEME["accent"])
+            self.configure(highlightbackground=THEME["hover_border"])
 
     def _on_leave(self, event=None):
         self._refresh_border()
@@ -614,16 +618,12 @@ class ImageSelector:
             self._schedule_gallery_refresh(immediate=True)
 
     def _reset_gallery_tiles(self):
-        """Drop all currently materialized tiles and invalidate pending decodes.
-
-        Called whenever filtered_items changes identity (search, lazy append,
-        initial build), so stale tiles keyed by old indices don't linger.
-        """
         for tile in self._gallery_tiles.values():
             tile.destroy()
         self._gallery_tiles.clear()
         self._gallery_gen += 1
         self._gallery_grid_dirty = True
+        self._gallery_built = False           # <-- add
 
     # ── Selection & display ──
     def _on_list_select(self, event=None):
@@ -903,10 +903,15 @@ class ImageSelector:
         self.right_frame.pack_forget()
         self.gallery_frame.pack(side=LEFT, fill=BOTH, expand=True)
         self._reset_gallery_tiles()
-        self._schedule_gallery_refresh(immediate=True)
         self.input.focus_set()
+        # Let the geometry manager settle before we build tiles / compute
+        # scroll offsets.  If the canvas is still unsized after this, the
+        # pending scroll request survives and is applied by _refresh_gallery
+        # once <Configure> delivers the real size.
+        self.root.update_idletasks()
+        self._schedule_gallery_refresh(immediate=True)
         if self._last_index >= 0:
-            self.root.after(0, lambda: self._scroll_gallery_to(self._last_index))
+            self._scroll_gallery_to(self._last_index)
         self._base_status_text = (
             f"Gallery  |  {self._last_index + 1 if self._last_index >= 0 else 0}"
             f" / {len(self.filtered_items)}"
@@ -946,47 +951,55 @@ class ImageSelector:
         return cols
 
     def _refresh_gallery(self):
-        """Rebuild only the tiles currently in / near the viewport."""
         if self._closing or self.view_mode != "gallery":
             return
+
         if not self.filtered_items:
             for tile in self._gallery_tiles.values():
                 tile.destroy()
             self._gallery_tiles.clear()
+            self._gallery_built = True
+            self._pending_gallery_scroll = None
+            return
+
+        # Never build against an unsized canvas: winfo_*() return 1 before the
+        # widget is mapped, which produces a bogus column count and scroll
+        # extent.  <Configure> re-triggers us once the real size is known.
+        # Keep the pending scroll request alive across this early return.
+        if (self.gallery_canvas.winfo_width() <= 1
+                or self.gallery_canvas.winfo_height() <= 1):
             return
 
         cols = self._compute_cols()
         if cols != self._gallery_cols:
             self._gallery_cols = cols
-            # Tile positions changed; drop all existing tiles
             for tile in self._gallery_tiles.values():
                 tile.destroy()
             self._gallery_tiles.clear()
             self._gallery_gen += 1
 
-        # Full grid geometry
         row_h = GALLERY_TILE_H + GALLERY_CAPTION_H + GALLERY_PAD
         col_w = GALLERY_TILE_W + GALLERY_PAD
         total_rows = (len(self.filtered_items) + cols - 1) // cols
-        # Any tile whose index is now out of range is stale
-        n = len(self.filtered_items)
-        for idx in list(self._gallery_tiles.keys()):
-            if idx >= n:
-                self._gallery_tiles.pop(idx).destroy()
-
         total_h = total_rows * row_h + GALLERY_PAD
 
-        # Ensure canvas knows the full scrollable size even if only a slice
-        # of tiles exist. We'll resize gallery_inner.
+        # Publish the full scrollable geometry BEFORE doing anything that
+        # depends on it (yview_moveto, canvasy, ...).
         self.gallery_inner.configure(width=cols * col_w + GALLERY_PAD,
                                      height=max(total_h, 1))
-        # Also make sure the inner window is anchored at (0,0)
         self.gallery_canvas.coords(self._gallery_inner_id, 0, 0)
-        self.gallery_canvas.configure(scrollregion=(0, 0,
-                                                    cols * col_w + GALLERY_PAD,
-                                                    total_h))
+        self.gallery_canvas.configure(
+            scrollregion=(0, 0, cols * col_w + GALLERY_PAD, total_h))
 
-        # Figure out visible rows
+        # Apply any deferred scroll request now that the scrollregion and
+        # inner-frame height reflect the real grid.  Doing this *before* we
+        # compute the visible row range means the tiles we are about to build
+        # are the ones that will actually be on screen.
+        if self._pending_gallery_scroll is not None:
+            idx = self._pending_gallery_scroll
+            self._pending_gallery_scroll = None
+            self._apply_gallery_scroll(idx)
+
         canvas_h = max(self.gallery_canvas.winfo_height(), 1)
         y_top = self.gallery_canvas.canvasy(0)
         first_row = max(0, int(y_top // row_h) - GALLERY_OVERSCAN_ROWS)
@@ -995,12 +1008,10 @@ class ImageSelector:
         first_idx = first_row * cols
         last_idx = min(len(self.filtered_items), (last_row + 1) * cols)
 
-        # Drop tiles outside the window
         for idx in list(self._gallery_tiles.keys()):
             if idx < first_idx or idx >= last_idx:
                 self._gallery_tiles.pop(idx).destroy()
 
-        # Create missing tiles
         tw, th = GALLERY_THUMB_MAX
         for idx in range(first_idx, last_idx):
             if idx in self._gallery_tiles:
@@ -1009,21 +1020,20 @@ class ImageSelector:
             tile = GalleryTile(self.gallery_inner, self, idx, label, path)
             r = idx // cols
             c = idx % cols
-            # Place with .place() to avoid grid reflow cost
             tile.place(x=c * col_w + GALLERY_PAD // 2,
                        y=r * row_h + GALLERY_PAD // 2,
                        width=GALLERY_TILE_W,
                        height=GALLERY_TILE_H + GALLERY_CAPTION_H)
             self._gallery_tiles[idx] = tile
-            # Apply current state
             tile.set_selected(path in self.selected_paths)
             tile.set_current(idx == self._last_index)
-            # Request thumbnail
             self._load_thumbnail_async(
                 path, tw, th,
-                lambda photo, i=idx, g=self._gallery_gen: self._on_gallery_thumb_ready(i, photo, g)
+                lambda photo, i=idx, g=self._gallery_gen:
+                    self._on_gallery_thumb_ready(i, photo, g)
             )
 
+        self._gallery_built = True
 
     def _on_gallery_thumb_ready(self, index, photo, gen):
         if self._closing or gen != self._gallery_gen:
@@ -1046,7 +1056,19 @@ class ImageSelector:
     def _scroll_gallery_to(self, index):
         if index < 0 or index >= len(self.filtered_items):
             return
-        cols = self._gallery_cols or 1
+        # Always route through _refresh_gallery: it is the only place that
+        # knows the final column count, the inner frame height and the
+        # scrollregion.  Anything else produces a bogus scroll fraction.
+        self._pending_gallery_scroll = index
+        self._schedule_gallery_refresh(immediate=True)
+
+    def _apply_gallery_scroll(self, index):
+        """Move the canvas so that item `index` is fully inside the viewport.
+
+        Must be called only from `_refresh_gallery`, after the scrollregion
+        and gallery_inner geometry have been set for the current column count.
+        """
+        cols = max(self._gallery_cols, 1)
         row = index // cols
         row_h = GALLERY_TILE_H + GALLERY_CAPTION_H + GALLERY_PAD
         row_top = row * row_h
@@ -1061,14 +1083,12 @@ class ImageSelector:
         elif row_bottom > y_bottom:
             new_top = row_bottom - canvas_h
         else:
-            return
+            return  # already visible
 
-        total_h = self.gallery_canvas.bbox("all")
-        if total_h is None:
-            return
-        total = max(total_h[3], 1)
+        total = max(self.gallery_inner.winfo_reqheight(), 1)
         self.gallery_canvas.yview_moveto(max(0.0, min(1.0, new_top / total)))
-        self._schedule_gallery_refresh()
+
+
 
     # ── Gallery navigation ──
     def _gallery_cols_count(self):
