@@ -20,6 +20,10 @@ Multi-select:
 Views:
     <Control-g>       : toggle between list view and gallery view
     <Tab>             : toggle between list view and gallery view
+    --gallery-rows N  : target number of gallery rows visible (default 3.5)
+    --gallery-cols N  : target number of gallery columns visible
+    --gallery-tile-size N : explicit tile size in pixels (overrides rows/cols)
+
 
 Pre-select:
     --pre-select "entry1\nentry2"      : pre-select labels at launch
@@ -89,12 +93,15 @@ DISK_CACHE_ENABLED = True
 CACHE_DIR = Path(os.environ.get("XDG_CACHE_HOME", "~/.cache")).expanduser() / "sel_img_thumbs"
 CACHE_WEBP_QUALITY = 82
 
-# Gallery geometry
-GALLERY_TILE_W = 180
-GALLERY_TILE_H = 140
-GALLERY_CAPTION_H = 34
-GALLERY_PAD = 10
-GALLERY_THUMB_MAX = (GALLERY_TILE_W - 8, GALLERY_TILE_H - 8)
+# Gallery geometry — tile size scales with viewport size at runtime.
+GALLERY_TILE_MIN = 180
+GALLERY_TILE_MAX = 420
+GALLERY_TARGET_ROWS = 3.5        # approx rows we want visible in the viewport
+GALLERY_CAPTION_RATIO = 0.16     # caption height as fraction of tile size
+GALLERY_CAPTION_MIN = 22
+GALLERY_PAD_RATIO = 0.045        # inter-tile pad as fraction of tile size
+GALLERY_PAD_MIN = 6
+GALLERY_SIZE_QUANTUM = 8         # quantize tile size to reduce rebuild churn
 GALLERY_OVERSCAN_ROWS = 2
 
 
@@ -232,11 +239,11 @@ class GalleryTile(Frame):
         self.caption = Label(self, bg=THEME["bg_secondary"], text=label,
                              fg=THEME["fg_text"], font=("sans-serif", 9),
                              anchor="center", justify="center",
-                             wraplength=GALLERY_TILE_W - 12)
+                             wraplength=max(40, app._tile_w - 12))
         self.caption.pack(side=BOTTOM, fill=X, padx=2, pady=(0, 2))
 
-        self.configure(width=GALLERY_TILE_W,
-                       height=GALLERY_TILE_H + GALLERY_CAPTION_H)
+        self.configure(width=app._tile_w,
+                       height=app._tile_h + app._tile_caption_h)
         self.pack_propagate(False)
 
         for w in (self, self.thumb, self.caption):
@@ -314,9 +321,17 @@ class GalleryTile(Frame):
 # ─── Main Application ────────────────────────────────────────────────────────
 
 class ImageSelector:
+
     def __init__(self, root, image_paths, display_labels=None,
                  pre_select_labels=None, pass_idx=0, idx_write_path="",
-                 custom_title=""):
+                 custom_title="", gallery_rows=None, gallery_cols=None,
+                 gallery_tile_size=None):
+        self._gallery_rows_opt = gallery_rows if gallery_rows and gallery_rows > 0 else None
+        self._gallery_cols_opt = gallery_cols if gallery_cols and gallery_cols > 0 else None
+        self._gallery_tile_opt = (gallery_tile_size
+                                  if gallery_tile_size and gallery_tile_size > 0
+                                  else None)
+
         self.idx_write_path = idx_write_path
         self.custom_title = custom_title
 
@@ -342,7 +357,16 @@ class ImageSelector:
 
         # View state
         self.view_mode = "list"
-        self._gallery_thumb_size = GALLERY_THUMB_MAX
+        self.view_mode = "list"
+        self._gallery_resize_after = None
+        self._gallery_gen = 0
+
+        # Gallery tile metrics — recomputed from the viewport size.
+        self._tile_w = 240
+        self._tile_h = 240
+        self._tile_caption_h = 34
+        self._tile_pad = 10
+        self._tile_thumb_max = (self._tile_w - 5, self._tile_h - 5)
         self._gallery_resize_after = None
         self._gallery_gen = 0
 
@@ -1075,14 +1099,65 @@ class ImageSelector:
         self.gallery_canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
         self._schedule_gallery_refresh()
 
+    def _compute_tile_metrics(self):
+        """Return (tile_w, tile_h, caption_h, pad) sized for the viewport,
+        honouring --gallery-rows / --gallery-cols / --gallery-tile-size."""
+        cw = self.gallery_canvas.winfo_width()
+        ch = self.gallery_canvas.winfo_height()
+        if cw <= 1 or ch <= 1:
+            cw = max(self.root.winfo_width(), 1)
+            ch = max(self.root.winfo_height(), 1)
+        if cw <= 1 or ch <= 1:
+            cw, ch = 1200, 800  # window not yet mapped
+
+        if self._gallery_tile_opt is not None:
+            base = float(self._gallery_tile_opt)
+        else:
+            candidates = []
+            rows = self._gallery_rows_opt or GALLERY_TARGET_ROWS
+            candidates.append(ch / float(rows))
+            if self._gallery_cols_opt:
+                candidates.append(cw / float(self._gallery_cols_opt))
+            base = min(candidates)
+
+        q = GALLERY_SIZE_QUANTUM
+        tile = int(round(base / q)) * q
+        tile = max(GALLERY_TILE_MIN, min(GALLERY_TILE_MAX, tile))
+        pad = max(GALLERY_PAD_MIN, int(round(tile * GALLERY_PAD_RATIO)))
+        cap = max(GALLERY_CAPTION_MIN, int(round(tile * GALLERY_CAPTION_RATIO)))
+        return tile, tile, cap, pad
+
+    def _update_tile_metrics(self):
+        """Recompute tile metrics. Returns True if they changed."""
+        tw, th, cap, pad = self._compute_tile_metrics()
+        if (tw, th, cap, pad) == (self._tile_w, self._tile_h,
+                                  self._tile_caption_h, self._tile_pad):
+            return False
+        self._tile_w = tw
+        self._tile_h = th
+        self._tile_caption_h = cap
+        self._tile_pad = pad
+        self._tile_thumb_max = (max(1, tw - 5), max(1, th - 5))
+        return True
+
     def _compute_cols(self):
         canvas_w = max(self.gallery_canvas.winfo_width(), 1)
-        cols = max(1, (canvas_w - GALLERY_PAD) // (GALLERY_TILE_W + GALLERY_PAD))
+        cols = max(1, (canvas_w - self._tile_pad) // (self._tile_w + self._tile_pad))
         return cols
+
 
     def _refresh_gallery(self):
         if self._closing or self.view_mode != "gallery":
             return
+
+        if self._update_tile_metrics():
+            # Tile size changed — recycle everything so tiles pick up new geometry.
+            for tile in self._gallery_tiles.values():
+                tile.destroy()
+            self._gallery_tiles.clear()
+            self._gallery_gen += 1
+            self._gallery_cols = 0  # force column recompute
+
 
         if not self.filtered_items:
             for tile in self._gallery_tiles.values():
@@ -1104,16 +1179,16 @@ class ImageSelector:
             self._gallery_tiles.clear()
             self._gallery_gen += 1
 
-        row_h = GALLERY_TILE_H + GALLERY_CAPTION_H + GALLERY_PAD
-        col_w = GALLERY_TILE_W + GALLERY_PAD
+        row_h = self._tile_h + self._tile_caption_h + self._tile_pad
+        col_w = self._tile_w + self._tile_pad
         total_rows = (len(self.filtered_items) + cols - 1) // cols
-        total_h = total_rows * row_h + GALLERY_PAD
+        total_h = total_rows * row_h + self._tile_pad
 
-        self.gallery_inner.configure(width=cols * col_w + GALLERY_PAD,
+        self.gallery_inner.configure(width=cols * col_w + self._tile_pad,
                                      height=max(total_h, 1))
         self.gallery_canvas.coords(self._gallery_inner_id, 0, 0)
         self.gallery_canvas.configure(
-            scrollregion=(0, 0, cols * col_w + GALLERY_PAD, total_h))
+            scrollregion=(0, 0, cols * col_w + self._tile_pad, total_h))
 
         if self._pending_gallery_scroll is not None:
             idx = self._pending_gallery_scroll
@@ -1132,7 +1207,7 @@ class ImageSelector:
             if idx < first_idx or idx >= last_idx:
                 self._gallery_tiles.pop(idx).destroy()
 
-        tw, th = GALLERY_THUMB_MAX
+        tw, th = self._tile_thumb_max
         for idx in range(first_idx, last_idx):
             label, path = self.filtered_items[idx]
             tile = self._gallery_tiles.get(idx)
@@ -1142,10 +1217,10 @@ class ImageSelector:
                 tile = GalleryTile(self.gallery_inner, self, idx, label, path)
                 r = idx // cols
                 c = idx % cols
-                tile.place(x=c * col_w + GALLERY_PAD // 2,
-                           y=r * row_h + GALLERY_PAD // 2,
-                           width=GALLERY_TILE_W,
-                           height=GALLERY_TILE_H + GALLERY_CAPTION_H)
+                tile.place(x=c * col_w + self._tile_pad // 2,
+                           y=r * row_h + self._tile_pad // 2,
+                           width=self._tile_w,
+                           height=self._tile_h + self._tile_caption_h)
                 self._gallery_tiles[idx] = tile
                 needs_thumb = True
             elif tile.update_item(idx, label, path):
@@ -1197,7 +1272,7 @@ class ImageSelector:
         """
         cols = max(self._gallery_cols, 1)
         row = index // cols
-        row_h = GALLERY_TILE_H + GALLERY_CAPTION_H + GALLERY_PAD
+        row_h = self._tile_h + self._tile_caption_h + self._tile_pad
         row_top = row * row_h
         row_bottom = row_top + row_h
 
@@ -1253,7 +1328,7 @@ class ImageSelector:
             return "break"
         cols = self._gallery_cols_count()
         canvas_h = max(self.gallery_canvas.winfo_height(), 1)
-        rows = max(1, canvas_h // (GALLERY_TILE_H + GALLERY_CAPTION_H + GALLERY_PAD))
+        rows = max(1, canvas_h // (self._tile_h + self._tile_caption_h + self._tile_pad))
         step = cols * rows * direction
         idx = max(0, min(len(self.filtered_items) - 1, self._last_index + step))
         self._select_and_show(idx, from_gallery=True)
@@ -1299,6 +1374,12 @@ def parse_args():
     parser.add_argument("--custom-title", help="Title of the window")
     parser.add_argument("--pre-select-file", help="File containing newline-separated labels to pre-select")
     parser.add_argument("--gallery", action="store_true", help="Start in gallery view")
+    parser.add_argument("--gallery-rows", type=float, default=None,
+                        help="Target number of gallery rows visible (default 3.5)")
+    parser.add_argument("--gallery-cols", type=int, default=None,
+                        help="Target number of gallery columns visible")
+    parser.add_argument("--gallery-tile-size", type=int, default=None,
+                        help="Explicit gallery tile size in pixels (overrides rows/cols)")
     return parser.parse_args()
 
 
@@ -1368,7 +1449,11 @@ def main():
         app = ImageSelector(root, image_entries, display_labels=list_entries,
                             pre_select_labels=pre_select_labels,
                             pass_idx=pass_idx, idx_write_path=idx_write_path,
-                            custom_title=custom_title)
+                            custom_title=custom_title,
+                            gallery_rows=args.gallery_rows,
+                            gallery_cols=args.gallery_cols,
+                            gallery_tile_size=args.gallery_tile_size)
+
         if args.gallery:
             app._show_gallery()
         root.mainloop()
@@ -1396,7 +1481,10 @@ def main():
         root = Tk()
         app = ImageSelector(root, [], pre_select_labels=pre_select_labels,
                             pass_idx=pass_idx, idx_write_path=idx_write_path,
-                            custom_title=custom_title)
+                            custom_title=custom_title,
+                            gallery_rows=args.gallery_rows,
+                            gallery_cols=args.gallery_cols,
+                            gallery_tile_size=args.gallery_tile_size)
         if args.gallery:
             app._show_gallery()
         app.start_lazy_scan(args.paths, recursive=args.recursive, sort_time=args.time)
@@ -1410,7 +1498,11 @@ def main():
         root = Tk()
         app = ImageSelector(root, images, pre_select_labels=pre_select_labels,
                             pass_idx=pass_idx, idx_write_path=idx_write_path,
-                            custom_title=custom_title)
+                            custom_title=custom_title,
+                            gallery_rows=args.gallery_rows,
+                            gallery_cols=args.gallery_cols,
+                            gallery_tile_size=args.gallery_tile_size)
+
         if args.gallery:
             app._show_gallery()
         root.mainloop()
