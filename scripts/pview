@@ -1,6 +1,0 @@
-#!/bin/sh
-OPTION=$(ls "$HOME/Pictures/random stuff/unstability" | fzf)
-if [ $OPTION ]
-then
-	python3 $HOME/Pictures/random\ stuff/unstability/$OPTION/$OPTION.py
-fi
