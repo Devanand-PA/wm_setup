@@ -22,7 +22,9 @@ Views:
     <Tab>             : toggle between list view and gallery view
     --gallery-rows N  : target number of gallery rows visible (default 3.5)
     --gallery-cols N  : target number of gallery columns visible
-    --gallery-tile-size N : explicit tile size in pixels (overrides rows/cols)
+    --gallery-tile-size N : explicit gallery tile size in pixels (overrides rows/cols)
+    --gallery-aspect N    : tile width/height ratio (default: auto-detected
+                            from the images, so screenshots fill their tiles)
 
 Pre-select:
     --pre-select "entry1\nentry2"      : pre-select labels at launch
@@ -99,18 +101,27 @@ DISK_CACHE_ENABLED = True
 CACHE_DIR = Path(os.environ.get("XDG_CACHE_HOME", "~/.cache")).expanduser() / "sel_img_thumbs"
 CACHE_WEBP_QUALITY = 82
 
-GALLERY_TILE_MIN = 180
+# Gallery geometry — tile size scales with viewport size at runtime.
+# Tiles are NOT forced square: width and height are derived independently
+# from the (auto-detected or user-supplied) target aspect ratio.
+GALLERY_TILE_MIN = 180           # bounds on the tile's *long* dimension
 GALLERY_TILE_MAX = 420
-GALLERY_TARGET_ROWS = 3.5
-GALLERY_CAPTION_RATIO = 0.16
+GALLERY_TARGET_ROWS = 3.5        # approx rows we want visible in the viewport
+GALLERY_CAPTION_RATIO = 0.16     # caption height as fraction of tile height
 GALLERY_CAPTION_MIN = 22
-GALLERY_PAD_RATIO = 0.045
+GALLERY_PAD_RATIO = 0.045        # inter-tile pad as fraction of tile height
 GALLERY_PAD_MIN = 6
-GALLERY_SIZE_QUANTUM = 8
+GALLERY_SIZE_QUANTUM = 8         # quantize tile size to reduce rebuild churn
 GALLERY_OVERSCAN_ROWS = 2
 
+# Default tile aspect ratio (width / height) when the images give us no clue.
+GALLERY_ASPECT_DEFAULT = 16.0 / 9.0
+GALLERY_ASPECT_MIN = 0.4
+GALLERY_ASPECT_MAX = 3.0
+GALLERY_ASPECT_SAMPLE = 20       # how many leading items to sample
 
-# ─── Decode helpers ──────────────────────────────────────────────────────────
+
+# ─── Decode helpers (module-level, run on worker threads) ────────────────────
 
 def _get_orig_size(path):
     """Cheap header-only read. Does not decode pixel data."""
@@ -133,12 +144,16 @@ def _disk_cache_path(path, w, h):
 
 
 def _decode_image(path, max_w, max_h):
-    """Decode/thumbnail `path` to fit inside (max_w, max_h)."""
+    """Decode/thumbnail `path` to fit inside (max_w, max_h).
+
+    Returns (PIL.Image or None, (orig_w, orig_h)).
+    Uses the on-disk WebP cache when possible.
+    """
     orig_size = _get_orig_size(path)
 
     cache_file = _disk_cache_path(path, max_w, max_h) if DISK_CACHE_ENABLED else None
 
-    # 1) On-disk cache hit
+    # ── 1) On-disk cache hit ──
     if cache_file is not None and cache_file.exists():
         try:
             with Image.open(cache_file) as img:
@@ -152,7 +167,7 @@ def _decode_image(path, max_w, max_h):
 
     pil_img = None
 
-    # 2) pyvips fast path
+    # ── 2) pyvips fast path ──
     if HAS_VIPS and HAS_NUMPY:
         try:
             v = pyvips.Image.thumbnail(path, max_w, height=max_h, size="down")
@@ -166,28 +181,36 @@ def _decode_image(path, max_w, max_h):
         except Exception:
             pil_img = None
 
-    # 3) PIL fallback
+    # ── 3) PIL fallback ──
     if pil_img is None:
         try:
             with Image.open(path) as img:
+                # Ask libjpeg for a pre-scaled decode (huge win on big JPEGs).
                 if img.format == "JPEG":
                     img.draft("RGB", (max_w, max_h))
+
+                # Box-filter pre-shrink for very large images (cheap O(n)).
                 if img.width > max_w * 4 or img.height > max_h * 4:
                     factor = max(1, min(img.width // (max_w * 2),
                                         img.height // (max_h * 2)))
                     if factor > 1:
                         img = img.reduce(factor)
+
+                # BILINEAR + reducing_gap is 2-3x faster than LANCZOS and
+                # visually identical at thumbnail sizes.
                 img.thumbnail((max_w, max_h),
                               Image.Resampling.BILINEAR,
                               reducing_gap=2.0)
+
                 if img.mode not in ("RGB", "RGBA"):
                     img = img.convert("RGBA" if "A" in img.mode else "RGB")
+
                 img.load()
                 pil_img = img
         except Exception:
             pil_img = None
 
-    # 4) Populate the on-disk cache
+    # ── 4) Populate the on-disk cache ──
     if pil_img is not None and cache_file is not None:
         tmp = None
         try:
@@ -363,13 +386,14 @@ class GalleryTile(QFrame):
         self._current = False
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(3, 3, 3, 3)
-        layout.setSpacing(2)
+        layout.setContentsMargins(2, 2, 2, 2)
+        layout.setSpacing(0)
 
         self.thumb = QLabel(self)
         self.thumb.setAlignment(Qt.AlignCenter)
         self.thumb.setText("…")
         self.thumb.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
+        self.thumb.setMinimumSize(1, 1)
         self.thumb.setAttribute(Qt.WA_TransparentForMouseEvents, True)
         self.thumb.setStyleSheet(
             f"background-color: {THEME['bg_secondary']}; color: {THEME['fg_text']};"
@@ -381,8 +405,14 @@ class GalleryTile(QFrame):
         self.caption.setWordWrap(True)
         self.caption.setAttribute(Qt.WA_TransparentForMouseEvents, True)
         self.caption.setStyleSheet(
-            f"background-color: {THEME['bg_secondary']}; color: {THEME['fg_text']}; font-size: 9px;"
+            f"background-color: {THEME['bg_secondary']}; "
+            f"color: {THEME['fg_text']}; font-size: 9px;"
         )
+        # Match the Tk behaviour: caption occupies a fixed slice of the tile.
+        try:
+            self.caption.setFixedHeight(max(1, int(app._tile_caption_h)))
+        except Exception:
+            self.caption.setFixedHeight(22)
         layout.addWidget(self.caption, 0)
 
         self._refresh_border()
@@ -487,7 +517,7 @@ class ImageSelector(QMainWindow):
     def __init__(self, image_paths, display_labels=None,
                  pre_select_labels=None, pass_idx=0, idx_write_path="",
                  custom_title="", gallery_rows=None, gallery_cols=None,
-                 gallery_tile_size=None):
+                 gallery_tile_size=None, gallery_aspect=None):
         super().__init__()
 
         self._gallery_rows_opt = gallery_rows if gallery_rows and gallery_rows > 0 else None
@@ -495,6 +525,10 @@ class ImageSelector(QMainWindow):
         self._gallery_tile_opt = (gallery_tile_size
                                   if gallery_tile_size and gallery_tile_size > 0
                                   else None)
+        self._gallery_aspect_opt = (gallery_aspect
+                                    if gallery_aspect and gallery_aspect > 0
+                                    else None)
+        self._gallery_aspect_cache = None
 
         self.idx_write_path = idx_write_path
         self.custom_title = custom_title
@@ -525,7 +559,7 @@ class ImageSelector(QMainWindow):
         # View state
         self.view_mode = "list"
 
-        # Gallery metrics
+        # Gallery metrics — recomputed from the viewport size.
         self._tile_w = 240
         self._tile_h = 240
         self._tile_caption_h = 34
@@ -931,6 +965,13 @@ class ImageSelector(QMainWindow):
         item.setData(Qt.UserRole, path)
         self.listbox.addItem(item)
         self.path_to_abs_index[path] = len(self.all_items) - 1
+
+        # Re-sample the tile aspect ratio while we're still inside the sample
+        # window (only when the user hasn't pinned it via --gallery-aspect).
+        if (self._gallery_aspect_opt is None
+                and len(self.all_items) <= GALLERY_ASPECT_SAMPLE):
+            self._gallery_aspect_cache = None
+
         if self.view_mode == "gallery":
             self._reset_gallery_tiles()
             self._schedule_gallery_refresh()
@@ -1282,7 +1323,47 @@ class ImageSelector(QMainWindow):
     def _on_gallery_scroll(self, value):
         self._schedule_gallery_refresh()
 
+    # ── Tile aspect ratio ────────────────────────────────────────────────────
+
+    def _get_gallery_aspect(self):
+        """Return the tile aspect ratio (width / height).
+
+        Honours --gallery-aspect; otherwise samples the first few images
+        and takes the median ratio so 16:9 screenshots don't waste space
+        in square tiles. Result is cached.
+        """
+        if self._gallery_aspect_cache is not None:
+            return self._gallery_aspect_cache
+
+        a = None
+        if self._gallery_aspect_opt is not None:
+            a = float(self._gallery_aspect_opt)
+        else:
+            ratios = []
+            for _label, path in self.all_items[:GALLERY_ASPECT_SAMPLE]:
+                w, h = _get_orig_size(path)
+                if w > 0 and h > 0:
+                    ratios.append(w / h)
+            if ratios:
+                ratios.sort()
+                a = ratios[len(ratios) // 2]
+
+        if a is None or a <= 0:
+            a = GALLERY_ASPECT_DEFAULT
+
+        a = max(GALLERY_ASPECT_MIN, min(GALLERY_ASPECT_MAX, a))
+        self._gallery_aspect_cache = a
+        return a
+
+    # ── Tile metrics ─────────────────────────────────────────────────────────
+
     def _compute_tile_metrics(self):
+        """Return (tile_w, tile_h, caption_h, pad).
+
+        Tiles are sized to match `aspect` (not forced square). The target
+        number of visible rows/columns determines the tile's dimensions
+        along each axis independently.
+        """
         cw = self.gallery_canvas.viewport().width()
         ch = self.gallery_canvas.viewport().height()
         if cw <= 1 or ch <= 1:
@@ -1291,22 +1372,52 @@ class ImageSelector(QMainWindow):
         if cw <= 1 or ch <= 1:
             cw, ch = 1200, 800
 
+        aspect = self._get_gallery_aspect()
+
         if self._gallery_tile_opt is not None:
-            base = float(self._gallery_tile_opt)
+            # Treat the option as a bound on the tile's long side.
+            long_side = float(self._gallery_tile_opt)
+            if aspect >= 1.0:
+                base_w = long_side
+                base_h = long_side / aspect
+            else:
+                base_h = long_side
+                base_w = long_side * aspect
         else:
-            candidates = []
             rows = self._gallery_rows_opt or GALLERY_TARGET_ROWS
-            candidates.append(ch / float(rows))
+            # Approximate per-row vertical cost: tile_h * (1 + caption + pad)
+            denom_v = 1.0 + GALLERY_CAPTION_RATIO + GALLERY_PAD_RATIO
+            tile_h_from_rows = (ch / float(rows)) / denom_v
+            tile_w_from_rows = tile_h_from_rows * aspect
+
             if self._gallery_cols_opt:
-                candidates.append(cw / float(self._gallery_cols_opt))
-            base = min(candidates)
+                denom_h = 1.0 + GALLERY_PAD_RATIO
+                tile_w_from_cols = (cw / float(self._gallery_cols_opt)) / denom_h
+                base_w = min(tile_w_from_rows, tile_w_from_cols)
+            else:
+                base_w = tile_w_from_rows
+            base_h = base_w / aspect
 
         q = GALLERY_SIZE_QUANTUM
-        tile = int(round(base / q)) * q
-        tile = max(GALLERY_TILE_MIN, min(GALLERY_TILE_MAX, tile))
-        pad = max(GALLERY_PAD_MIN, int(round(tile * GALLERY_PAD_RATIO)))
-        cap = max(GALLERY_CAPTION_MIN, int(round(tile * GALLERY_CAPTION_RATIO)))
-        return tile, tile, cap, pad
+        tile_w = int(round(base_w / q)) * q
+        tile_h = int(round(base_h / q)) * q
+        tile_w = max(q, tile_w)
+        tile_h = max(q, tile_h)
+
+        # Clamp the long side to [MIN, MAX], preserving aspect.
+        long_side = max(tile_w, tile_h)
+        if long_side < GALLERY_TILE_MIN:
+            scale = GALLERY_TILE_MIN / float(long_side)
+            tile_w = max(q, int(round(tile_w * scale / q)) * q)
+            tile_h = max(q, int(round(tile_h * scale / q)) * q)
+        elif long_side > GALLERY_TILE_MAX:
+            scale = GALLERY_TILE_MAX / float(long_side)
+            tile_w = max(q, int(round(tile_w * scale / q)) * q)
+            tile_h = max(q, int(round(tile_h * scale / q)) * q)
+
+        pad = max(GALLERY_PAD_MIN, int(round(tile_h * GALLERY_PAD_RATIO)))
+        cap = max(GALLERY_CAPTION_MIN, int(round(tile_h * GALLERY_CAPTION_RATIO)))
+        return tile_w, tile_h, cap, pad
 
     def _update_tile_metrics(self):
         tw, th, cap, pad = self._compute_tile_metrics()
@@ -1330,12 +1441,13 @@ class ImageSelector(QMainWindow):
             return
 
         if self._update_tile_metrics():
+            # Tile size changed — recycle everything so tiles pick up new geometry.
             for tile in self._gallery_tiles.values():
                 tile.setParent(None)
                 tile.deleteLater()
             self._gallery_tiles.clear()
             self._gallery_gen += 1
-            self._gallery_cols = 0
+            self._gallery_cols = 0  # force column recompute
 
         if not self.filtered_items:
             for tile in self._gallery_tiles.values():
@@ -1412,6 +1524,8 @@ class ImageSelector(QMainWindow):
             tile.set_current(idx == self._last_index)
 
             if needs_thumb:
+                # Pass the expected path so a late callback from a previous
+                # item at this grid slot can't paint the wrong thumbnail.
                 self._load_thumbnail_async(
                     path, tw, th,
                     lambda pix, orig, i=idx, p=path, g=self._gallery_gen:
@@ -1443,7 +1557,11 @@ class ImageSelector(QMainWindow):
         self._schedule_gallery_refresh(immediate=True)
 
     def _apply_gallery_scroll(self, index):
-        """Move the viewport so that item `index` is fully inside."""
+        """Move the canvas so that item `index` is fully inside the viewport.
+
+        Must be called only from `_refresh_gallery`, after the scrollregion
+        and gallery_inner geometry have been set for the current column count.
+        """
         cols = max(self._gallery_cols, 1)
         row = index // cols
         row_h = self._tile_h + self._tile_caption_h + self._tile_pad
@@ -1465,8 +1583,7 @@ class ImageSelector(QMainWindow):
         new_top = max(0, min(new_top, vbar.maximum()))
         vbar.setValue(new_top)
 
-    # ── Gallery navigation ───────────────────────────────────────────────────
-
+    # ── Gallery navigation ──
     def _gallery_cols_count(self):
         return max(1, self._gallery_cols)
 
@@ -1570,6 +1687,9 @@ def parse_args():
                         help="Target number of gallery columns visible")
     parser.add_argument("--gallery-tile-size", type=int, default=None,
                         help="Explicit gallery tile size in pixels (overrides rows/cols)")
+    parser.add_argument("--gallery-aspect", type=float, default=None,
+                        help="Gallery tile width/height ratio (default: "
+                             "auto-detected from the images; e.g. 1.777 for 16:9)")
     return parser.parse_args()
 
 
@@ -1676,7 +1796,8 @@ def main():
             custom_title=custom_title,
             gallery_rows=args.gallery_rows,
             gallery_cols=args.gallery_cols,
-            gallery_tile_size=args.gallery_tile_size
+            gallery_tile_size=args.gallery_tile_size,
+            gallery_aspect=args.gallery_aspect,
         )
         app.show()
         if args.gallery:
@@ -1694,7 +1815,8 @@ def main():
             custom_title=custom_title,
             gallery_rows=args.gallery_rows,
             gallery_cols=args.gallery_cols,
-            gallery_tile_size=args.gallery_tile_size
+            gallery_tile_size=args.gallery_tile_size,
+            gallery_aspect=args.gallery_aspect,
         )
         app.show()
         if args.gallery:
@@ -1717,7 +1839,8 @@ def main():
             custom_title=custom_title,
             gallery_rows=args.gallery_rows,
             gallery_cols=args.gallery_cols,
-            gallery_tile_size=args.gallery_tile_size
+            gallery_tile_size=args.gallery_tile_size,
+            gallery_aspect=args.gallery_aspect,
         )
         app.show()
         if args.gallery:
