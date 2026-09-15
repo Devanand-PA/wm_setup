@@ -6,21 +6,44 @@ if (len(ARGS) > 1) :
     ARG = ARGS[1]
 else :
     ARG = ""
-IMG = ""
-if ("U" in ARG) :
-    IMG=subprocess.check_output("sel_img --gallery -t $(find $HOME/Pictures/Screenshots -type d)",shell=True,text=True).rstrip()
+idxtemppath = "/dev/shm/vscrot_idx"
+run = True
+with open(idxtemppath,'w') as FILE :
+    FILE.write('0')
 
-elif ("N" in ARG) :
-    IMG=subprocess.check_output("sel_img --gallery -t $(find $HOME/Pictures/Named_Screenshots -type d)",shell=True,text=True).rstrip()
 
-if not IMG :
-    IMG = subprocess.check_output("sel_img --gallery -t $(find $HOME/Pictures/*Screenshots -type d)",shell=True,text=True).rstrip()
+while  run :
+    with open(idxtemppath) as FILE :
+        curr_idx = FILE.read()
+    IMG = ""
+    try :
+        if ("U" in ARG) :
+            IMG=subprocess.check_output(
+                    f"sel_img --gallery -t --pass-idx {curr_idx} --idx-write-path {idxtemppath} $(find $HOME/Pictures/Screenshots -type d)"
+                    ,shell=True,text=True).rstrip()
 
-imgargs = []
-if IMG :
-    print(IMG)
-    if "I" in ARG :
-        imgs = list(IMG.split("\n"))
-        if len(imgs)>1 :
-            imgargs = ['-t']
-        subprocess.run(['sxiv']+imgargs+imgs)
+        elif ("N" in ARG) :
+            IMG=subprocess.check_output(
+                    f"sel_img --gallery -t --pass-idx {curr_idx} --idx-write-path {idxtemppath} $(find $HOME/Pictures/Named_Screenshots -type d)"
+                    ,shell=True,text=True).rstrip()
+
+        if not IMG :
+            IMG = subprocess.check_output(
+                    f"sel_img --gallery -t --pass-idx {curr_idx} --idx-write-path {idxtemppath} $(find $HOME/Pictures/*Screenshots -type d)"
+                    ,shell=True,text=True).rstrip()
+
+    except subprocess.CalledProcessError as e:
+        exit_code = int(e.returncode)
+        if exit_code == 1 :
+            sys.exit()
+
+
+
+    imgargs = []
+    if IMG :
+        print(IMG)
+        if "I" in ARG :
+            imgs = list(IMG.split("\n"))
+            if len(imgs)>1 :
+                imgargs = ['-t']
+            subprocess.run(['sxiv']+imgargs+imgs)
