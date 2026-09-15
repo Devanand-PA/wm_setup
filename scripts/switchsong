@@ -1,0 +1,12 @@
+#!/bin/sh
+
+if [ "$(playerctl metadata  | grep title)" ] 
+then
+sel_pl="$(playerctl metadata  | grep title | dmenu -l 30 -i | awk '{$1="";$2="";sub(/^ */, "");print $0}')"
+if [ "$sel_pl" ]
+then
+wmctrl -a "$sel_pl"
+fi
+else
+	playsong
+fi
